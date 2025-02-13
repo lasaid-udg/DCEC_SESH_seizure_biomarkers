@@ -1,26 +1,86 @@
 import re
 import mne
-import numpy as np
+import logging
+import numpy as numpy
+import scipy.signal
 from . import settings
 
 
-class EegProcessorChb():
-
-    DATASET = "chb-mit"
+class EegProcessorBaseClass():
 
     def __init__(self, filename: str):
         """
         :param filename: full path of the edf file
         """
-        self.sampling_frequency = settings[EegProcessorChb.DATASET]["f_samp"]
-        self.gain = settings[EegProcessorChb.DATASET]["gain"]
-        self.units = settings[EegProcessorChb.DATASET]["units"]
-        self.selected_channels = settings[EegProcessorChb.DATASET]["channels"]
+        self.sampling_frequency = settings[self.DATASET]["f_samp"]
+        self.gain = settings[self.DATASET]["gain"]
+        self.units = settings[self.DATASET]["units"]
+        self.power_noise_frequency = settings[self.DATASET]["power_noise_frequency"]
+        self.selected_channels = settings[self.DATASET]["channels"]
+        self.drift_frequency = settings["drift_frequency"]
+        self.hfo_frequency = settings["hfo_frequency"]
         self.channels = None
         self.data = filename
+        self.filter_bank = None
+
+    def resample(self) -> None:
+        """
+        Downsample the signal to match the EXPECTED_SAMPLING_FREQUENCY.
+        Raise error if current sampling frequency is lower than or
+        not a multiple of EXPECTED_SAMPLING_FREQUENCY
+        """
+        assert self.sampling_frequency >= self.EXPECTED_SAMPLING_FREQUENCY
+        assert self.sampling_frequency % self.EXPECTED_SAMPLING_FREQUENCY == 0
+
+        downsampling_factor = int(self.sampling_frequency / self.EXPECTED_SAMPLING_FREQUENCY)
+        logging.info(f"Dowsampling factor is = {downsampling_factor}")
+        self._data = scipy.signal.decimate(self._data, downsampling_factor)
+        self.sampling_frequency = self.EXPECTED_SAMPLING_FREQUENCY
+
+    def scale(self) -> None:
+        """
+        Convert data from unitless to milivolts
+        """
+        self._data = self._data * self.gain / self.units
+
+    def remove_drift(self) -> None:
+        """
+        Remove the signal drift, caused by subject movement and electrode-skin contact
+        """
+        self.filter_bank.sampling_frequency = self.sampling_frequency
+        self._data = self.filter_bank.apply_filter(self._data, "highpass_butter",
+                                                   cut_frequency=self.drift_frequency)
+
+    def remove_hfo(self) -> None:
+        """
+        Remove the high frequency oscillation, frequencies above gamma band
+        """
+        self.filter_bank.sampling_frequency = self.sampling_frequency
+        self._data = self.filter_bank.apply_filter(self._data, "lowpass_butter",
+                                                   cut_frequency=self.hfo_frequency)
+
+    def remove_power_noise(self) -> None:
+        """
+        Remove the noise caused by the machine power line
+        """
+        self.filter_bank.sampling_frequency = self.sampling_frequency
+        self._data = self.filter_bank.apply_filter(self._data, "notch",
+                                                   power_frequency=self.power_noise_frequency)
+
+
+class EegProcessorChb(EegProcessorBaseClass):
+
+    DATASET = "chb-mit"
+    EXPECTED_SAMPLING_FREQUENCY = 256
+
+    def __init__(self, filename: str):
+        """
+        :param filename: full path of the edf file
+        """
+        super().__init__(filename)
 
     @property
-    def data(self) -> np.array:
+    def data(self) -> numpy.array:
         return self._data
 
     @data.setter
@@ -32,12 +92,7 @@ class EegProcessorChb():
         data = mne.io.read_raw_edf(filename)
         self._data = data.get_data()
         self.channels = data.ch_names
-
-    def scale(self) -> None:
-        """
-        Convert data from unitless to milivolts
-        """
-        self._data = self._data * self.gain / self.units
+        logging.info(f"Recording contains channels = {self.channels}")
 
     def select_channels(self) -> None:
         """
@@ -47,8 +102,8 @@ class EegProcessorChb():
         regex = "-[0-9]$"
         channels_to_idx = {re.sub(regex, "", x): y for x, y in zip(self.channels,
                                                                    range(len(self.channels)))}
-        temp_eeg = np.zeros([len(self.selected_channels),
-                            self._data.shape[1]])
+        temp_eeg = numpy.zeros([len(self.selected_channels),
+                               self._data.shape[1]])
         for idx, channel in zip(range(len(self.selected_channels)),
                                 self.selected_channels):
             new_channel = self._data[channels_to_idx[channel], :]
@@ -56,23 +111,19 @@ class EegProcessorChb():
         self._data = temp_eeg
 
 
-class EegProcessorSiena():
+class EegProcessorSiena(EegProcessorBaseClass):
 
     DATASET = "siena"
+    EXPECTED_SAMPLING_FREQUENCY = 256
 
     def __init__(self, filename: str):
         """
         :param filename: full path of the edf file
         """
-        self.sampling_frequency = settings[EegProcessorSiena.DATASET]["f_samp"]
-        self.gain = settings[EegProcessorSiena.DATASET]["gain"]
-        self.units = settings[EegProcessorSiena.DATASET]["units"]
-        self.selected_channels = settings[EegProcessorSiena.DATASET]["channels"]
-        self.channels = None
-        self.data = filename
+        super().__init__(filename)
 
     @property
-    def data(self) -> np.array:
+    def data(self) -> numpy.array:
         return self._data
 
     @data.setter
@@ -84,12 +135,7 @@ class EegProcessorSiena():
         data = mne.io.read_raw_edf(filename)
         self._data = data.get_data()
         self.channels = data.ch_names
-
-    def scale(self) -> None:
-        """
-        Convert data from unitless to milivolts
-        """
-        self._data = self._data * self.gain / self.units
+        logging.info(f"Recording contains channels = {self.channels}")
 
     def select_channels(self) -> None:
         """
@@ -100,8 +146,8 @@ class EegProcessorSiena():
         channels_to_idx = {re.sub(regex, "", x).lower(): y
                            for x, y in zip(self.channels,
                                            range(len(self.channels)))}
-        temp_eeg = np.zeros([len(self.selected_channels),
-                            self._data.shape[1]])
+        temp_eeg = numpy.zeros([len(self.selected_channels),
+                               self._data.shape[1]])
         for idx, channel in zip(range(len(self.selected_channels)),
                                 self.selected_channels):
             new_channel = (self._data[channels_to_idx[channel.lower()], :])
@@ -109,23 +155,19 @@ class EegProcessorSiena():
         self._data = temp_eeg
 
 
-class EegProcessorTusz():
+class EegProcessorTusz(EegProcessorBaseClass):
 
     DATASET = "tusz"
+    EXPECTED_SAMPLING_FREQUENCY = 256
 
     def __init__(self, filename: str):
         """
         :param filename: full path of the edf file
         """
-        self.sampling_frequency = settings[EegProcessorTusz.DATASET]["f_samp"]
-        self.gain = settings[EegProcessorTusz.DATASET]["gain"]
-        self.units = settings[EegProcessorTusz.DATASET]["units"]
-        self.selected_channels = settings[EegProcessorTusz.DATASET]["channels"]
-        self.channels = None
-        self.data = filename
+        super().__init__(filename)
 
     @property
-    def data(self) -> np.array:
+    def data(self) -> numpy.array:
         return self._data
 
     @data.setter
@@ -138,12 +180,7 @@ class EegProcessorTusz():
         self._data = data.get_data()
         self.f_samp = data.info["sfreq"]
         self.channels = data.ch_names
-
-    def scale(self) -> None:
-        """
-        Convert data from unitless to milivolts
-        """
-        self._data = self._data * self.gain / self.units
+        logging.info(f"Recording contains channels = {self.channels}")
 
     def select_channels(self) -> None:
         """
@@ -155,8 +192,8 @@ class EegProcessorTusz():
             key = re.sub("^EEG ", "", x).split("-")[0].lower()
             channels_to_idx[key] = y
 
-        temp_eeg = np.zeros([len(self.selected_channels),
-                            self._data.shape[1]])
+        temp_eeg = numpy.zeros([len(self.selected_channels),
+                               self._data.shape[1]])
         for idx, channel in zip(range(len(self.selected_channels)),
                                 self.selected_channels):
             new_channel = (self._data[channels_to_idx[channel.lower()], :])

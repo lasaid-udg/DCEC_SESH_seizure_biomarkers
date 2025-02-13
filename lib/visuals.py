@@ -84,3 +84,38 @@ def plot_frequency_and_phase_response(frequency_range: list, h: list, output_fil
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
                     transparent=False, facecolor='white')
     plt.show()
+
+
+def plot_eeg_spectrum(frequency_range: np.array, spectral_components: np.array, channels_list: list,
+                      subset_channels: list = None, output_file: str = None):
+
+    grid_specs = GridSpec(1, 1, wspace=0.08, hspace=0.25)
+    fig = plt.figure(figsize=(5.5, 4))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    space = np.max(np.max(spectral_components)) / 1.5
+
+    if subset_channels:
+        channels_list = [channels_list[idx] for idx in subset_channels]
+        for count, channel in zip(subset_channels, channels_list):
+            ax.plot(frequency_range, spectral_components[count, :] - space * (count + 1), label=channel,
+                    linewidth=1)
+    else:
+        for count, channel in enumerate(channels_list[:-1]):
+            ax.plot(frequency_range, spectral_components[count, :] - space * (count + 1), label=channel,
+                    linewidth=1)
+
+    #########################################################
+    ax.set_title("Spectrum (FFT)", fontsize=8)
+    ax.set(yticks=np.arange(-space * len(channels_list[:-1]), 1, space),
+           yticklabels=reversed(channels_list))
+    ax.set_xlabel("Frequency (Hz)", fontsize=8)
+    ax.set_ylabel("Absolute amplitude", fontsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
