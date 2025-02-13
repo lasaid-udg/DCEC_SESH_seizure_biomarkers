@@ -1,0 +1,102 @@
+chb-mit:
+  #epoch_size: 2           # 2 seconds  
+  f_samp: 256             # 256 Hz
+  gain: 2.559375
+  units: 0.000001         # Microvolts
+
+  seizure_type: null
+
+  channels:
+    - FP1-F7
+    - F7-T7
+    - T7-P7
+    - P7-O1
+    - FP1-F3
+    - F3-C3
+    - C3-P3
+    - P3-O1
+    - FP2-F4
+    - F4-C4
+    - C4-P4
+    - P4-O2
+    - FP2-F8
+    - F8-T8
+    - T8-P8
+    - P8-O2
+    - FZ-CZ
+    - CZ-PZ
+    - T7-FT9
+    - FT9-FT10
+    - FT10-T8
+
+
+siena:
+  #epoch_size: 2           # 2 seconds  
+  f_samp: 512
+  gain: 1
+  units: 0.000001  # Microvolts  
+
+  seizure_type:
+    PN00: IAS-T
+    PN01: IAS-T
+    PN03: IAS-T
+    PN05: IAS-T
+    PN06: IAS-T
+    PN07: IAS-T
+    PN09: IAS-T
+    PN10: FBTC-F
+    PN11: IAS-T
+    PN12: IAS-T
+    PN13: IAS-T
+    PN14: WIAS-T
+    PN16: IAS-T
+    PN17: IAS-T
+
+  channels:
+    - Fp1
+    - Fp2
+    - F3
+    - F4
+    - F7
+    - F8
+    - T3
+    - T4
+    - T5
+    - T6
+    - O1
+    - O2
+    - C3
+    - C4
+    - P3
+    - P4
+    - Fz
+    - Cz
+    - Pz
+
+
+tusz:
+  #epoch_size: 2           # 2 seconds  
+  f_samp: 512
+  gain: 1
+  units: 0.000001  # Microvolts
+
+  channels:
+    - Fp1
+    - Fp2
+    - F3
+    - F4
+    - F7
+    - F8
+    - T3
+    - T4
+    - T5
+    - T6
+    - O1
+    - O2
+    - C3
+    - C4
+    - P3
+    - P4
+    - Fz
+    - Cz
+    - Pz

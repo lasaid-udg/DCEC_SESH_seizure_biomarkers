@@ -1,0 +1,6 @@
+jupyter
+mne
+python-dotenv
+PyYAML
+flake8
+scipy
