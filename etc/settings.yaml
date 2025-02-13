@@ -1,8 +1,15 @@
+drift_frequency: 0.5        # Hertz
+hfo_frequency: 80           # Hertz
+notch_qa_factor: 20
+highpass_butter_order: 5    # Hertz
+lowpass_butter_order: 5     # Hertz
+
 chb-mit:
-  #epoch_size: 2           # 2 seconds  
-  f_samp: 256             # 256 Hz
+  epoch_size: 2             # Seconds  
+  f_samp: 256               # Hertz
   gain: 2.559375
-  units: 0.000001         # Microvolts
+  units: 0.000001           # Microvolts
+  power_noise_frequency: 60 #Hertz
 
   seizure_type: null
 
@@ -23,11 +30,6 @@ chb-mit:
     - F8-T8
     - T8-P8
     - P8-O2
-    - FZ-CZ
-    - CZ-PZ
-    - T7-FT9
-    - FT9-FT10
-    - FT10-T8
 
 
 siena:
@@ -35,6 +37,7 @@ siena:
   f_samp: 512
   gain: 1
   units: 0.000001  # Microvolts  
+  power_noise_frequency: 50 #Hertz
 
   seizure_type:
     PN00: IAS-T
@@ -79,6 +82,7 @@ tusz:
   f_samp: 512
   gain: 1
   units: 0.000001  # Microvolts
+  power_noise_frequency: 60 #Hertz
 
   channels:
     - Fp1
