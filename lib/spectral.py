@@ -12,6 +12,6 @@ class FourierAnalysis():
         Return the absolute values of the fourier spectrum.
         :param signal: matrix with the set of signals
         """
-        spectral_components = numpy.abs(scipy.fft.rfft(signal))
+        spectral_components = scipy.fft.rfft(signal)
         frequency_range = scipy.fft.rfftfreq(signal.shape[1], 1 / self.sampling_frequency)
         return frequency_range, spectral_components

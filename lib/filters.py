@@ -7,8 +7,8 @@ class FilterBank():
     def __init__(self, sampling_frequency: int):
         self.sampling_frequency = sampling_frequency
         self.notch_qa_factor = settings["notch_qa_factor"]
-        self.highpass_butter_order = settings["highpass_butter_order"]
-        self.lowpass_butter_order = settings["lowpass_butter_order"]
+        self.highpass_butter_order = settings["drift_butter_order"]
+        self.lowpass_butter_order = settings["hfo_butter_order"]
 
 
     def notch(self, power_frequency: int=50, get_freqz: bool=False) -> tuple:
@@ -40,5 +40,5 @@ class FilterBank():
 
     def apply_filter(self, signal, filter_name, **kwargs):
         b, a = getattr(self, filter_name)(**kwargs)
-        signal = scipy.signal.lfilter(b, a, signal)
+        signal = scipy.signal.filtfilt(b, a, signal)
         return signal

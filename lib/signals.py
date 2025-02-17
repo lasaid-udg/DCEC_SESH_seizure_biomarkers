@@ -15,6 +15,7 @@ class EegProcessorBaseClass():
         self.sampling_frequency = settings[self.DATASET]["f_samp"]
         self.gain = settings[self.DATASET]["gain"]
         self.units = settings[self.DATASET]["units"]
+        self.ekg_units = settings[self.DATASET]["ekg_units"]
         self.power_noise_frequency = settings[self.DATASET]["power_noise_frequency"]
         self.selected_channels = settings[self.DATASET]["channels"]
         self.drift_frequency = settings["drift_frequency"]
@@ -37,11 +38,15 @@ class EegProcessorBaseClass():
         self._data = scipy.signal.decimate(self._data, downsampling_factor)
         self.sampling_frequency = self.EXPECTED_SAMPLING_FREQUENCY
 
-    def scale(self) -> None:
+    def scale(self, ekg_reference: bool=False) -> None:
         """
         Convert data from unitless to milivolts
         """
-        self._data = self._data * self.gain / self.units
+        if not ekg_reference:
+            self._data = self._data * self.gain / self.units
+        else:
+            self._data[:-1, :] = self._data[:-1, :] * self.gain / self.units
+            self._data[-1, :] = (self._data[-1, :] - numpy.mean(self._data[-1, :])) / self.ekg_units
 
     def remove_drift(self) -> None:
         """
@@ -142,10 +147,13 @@ class EegProcessorSiena(EegProcessorBaseClass):
         Select a subset of the available channels, then the channels are sorted.
         The list of expected channels is detailed in settings
         """
-        regex = "^EEG "
-        channels_to_idx = {re.sub(regex, "", x).lower(): y
+        regex_eeg = "^EEG "
+        regex_ekg = "^ekg "
+        channels_to_idx = {re.sub(regex_eeg, "", x).lower(): y
                            for x, y in zip(self.channels,
                                            range(len(self.channels)))}
+        channels_to_idx = {re.sub(regex_ekg, "", channel).lower(): idx
+                           for channel, idx in channels_to_idx.items()}
         temp_eeg = numpy.zeros([len(self.selected_channels),
                                self._data.shape[1]])
         for idx, channel in zip(range(len(self.selected_channels)),

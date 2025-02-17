@@ -115,7 +115,7 @@ class MetadataChb():
                                                     "seizures": seizures}})
 
     def get_seizure_single_file(self, text_lines: list) -> tuple:
-        seizures = [(0.0, 0.0)]
+        seizures = [(0.0, 0.0, "NULL")]
         filename = re.search("(?<=:)\s.+", text_lines[0]).group(0).strip()
         number_seizures = int(re.findall("(?<=:\s).+", text_lines[1])[0])
 
@@ -127,7 +127,7 @@ class MetadataChb():
             start = int(re.findall("(?<=:\s)[0-9]+", text)[0])
             text = text_lines[(idx+1)*2 + 1]
             end = int(re.findall("(?<=:\s)[0-9]+", text)[0])
-            seizures.append((start, end))
+            seizures.append((start, end, "NULL"))
         return filename, tuple(seizures)
 
 
@@ -191,21 +191,55 @@ class MetadataTusz():
         self._seizure_ranges = {}
 
         for file in files:
-            with open(file) as fp:
-                lines = fp.readlines()
-            filename = file.split("/")[-1].rstrip(".tse")
+            filename = file.split("/")[-1].rstrip(".csv_bi")
 
-            for _, line in enumerate(lines):
-                if filename not in self._seizure_ranges:
-                    self._seizure_ranges[filename] = {"full_file": os.path.join(*(["/"] + file.split("/")[:-1] + [f"{filename}.edf"])),
-                                                      "seizures": [(0.0, 0.0, "bckg")]}
-                if "z" in line:
-                    seizure = self.get_seizure_single_file(line)
-                    self._seizure_ranges[filename]["seizures"].append(seizure)
+            if filename not in self._seizure_ranges:
+                self._seizure_ranges[filename] = {"full_file": os.path.join(*(["/"] + file.split("/")[:-1] + [f"{filename}.edf"])),
+                                                  "seizures": [(0.0, 0.0, "bckg")]}
+            seizure_ranges = self.get_seizures_ranges(file)
+            seizure_ranges = self.get_seizures_types(file.replace(".csv_bi", ".csv"), seizure_ranges)
+            self._seizure_ranges[filename]["seizures"].extend(seizure_ranges)
 
-    def get_seizure_single_file(self, text_line: str) -> tuple:
-        parts = text_line.split(" ")
-        return (float(parts[0]), float(parts[1]), parts[2])
+    def get_seizures_ranges(self, file) -> list:
+        seizures_ranges = []
+        with open(file) as fp:
+            lines = fp.readlines()
+
+        idx = [lines.index(i) for i in lines if "start_time" in i][0]
+
+        for event in lines[idx + 1:]:
+            if "z" not in event:
+                continue
+            line_parts = event.split(",")
+            seizures_ranges.append([float(line_parts[1]), float(line_parts[2]), "seizure"])
+
+        return seizures_ranges
+
+    def get_seizures_types(self, file: str, seizure_ranges: str) -> list:
+        seizure_types = set()
+        with open(file) as fp:
+            lines = fp.readlines()
+
+        idx = [lines.index(i) for i in lines if "start_time" in i][0]
+
+        for event in lines[idx + 1:]:
+            if "z" not in event:
+                continue
+            line_parts = event.split(",")
+            seizure_types.add(tuple([float(line_parts[1]), float(line_parts[2]), line_parts[3]]))
+
+        for seizure_range in seizure_ranges:
+            top_seizure_type = list()
+            for seizure_type in seizure_types:
+                if seizure_range[1] < seizure_type[0]:
+                    continue
+                if seizure_range[0] > seizure_type[1]:
+                    continue
+                top_seizure_type.append(seizure_type[2])
+            top_type = max(set(top_seizure_type), key=top_seizure_type.count)
+            seizure_range[2] = top_type
+
+        return seizure_ranges
 
 
 class MetadataListChb():
@@ -278,8 +312,8 @@ class MetadataListTusz():
     def patient_metadata(self, root_dir: str):
         _grouped_files = defaultdict(list)
         self._patient_metadata = {}
-        for x in glob.glob(os.path.join(root_dir, "**/**/**/**/**/**/*.tse")):
-            patient = x.split("/")[-3]
+        for x in glob.glob(os.path.join(root_dir, "**/**/**/*.csv_bi")):
+            patient = x.split("/")[-4]
             _grouped_files[patient].append(x)
 
         for patient, files in _grouped_files.items():
