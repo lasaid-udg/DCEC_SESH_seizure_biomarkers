@@ -3,84 +3,28 @@ import re
 import glob
 from collections import defaultdict
 from datetime import datetime, timedelta
+from typing import Tuple
 from . import settings
-
-
-class PatientChb():
-
-    def __init__(self, root_dir: str):
-        self.root_dir = root_dir
-        self.file_list = root_dir
-        self.patient_name = root_dir
-        self.counter = -1
-
-    @property
-    def file_list(self):
-        return self._file_list
-
-    @file_list.setter
-    def file_list(self, root_dir: str):
-        self._file_list = glob.glob(os.path.join(root_dir, "*.edf"))
-
-    @property
-    def patient_name(self):
-        return self._patient_name
-
-    @patient_name.setter
-    def patient_name(self, root_dir: str):
-        self._patient_name = os.path.split(root_dir)[-1]
-
-    def __iter__(self):
-        return self
-
-    def __len__(self):
-        return len(self.file_list)
-
-    def __next__(self):
-        if self.counter + 1 == len(self.file_list):
-            raise StopIteration
-        self.counter += 1
-        return self.file_list[self.counter]
-
-
-class PatientsChb():
-
-    def __init__(self, root_dir: str=settings["chb-mit"]["dataset"]):
-        self.root_dir = root_dir
-        self.patient_list = root_dir
-        self.counter = -1
-
-    @property
-    def patient_list(self):
-        return self._patient_list
-
-    @patient_list.setter
-    def patient_list(self, root_dir: str):
-        self._patient_list = []
-        for x in list(os.walk(root_dir))[1:]:
-            self._patient_list.append(PatientChb(x[0]))
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.counter + 1 == len(self.patient_list):
-            raise StopIteration
-        self.counter += 1
-        return self.patient_list[self.counter]
 
 
 class MetadataChb():
 
     def __init__(self, file: str):
+        """
+        :param file: path to the metadata file
+        """
         self.seizure_ranges = file
 
     @property
-    def seizure_ranges(self):
+    def seizure_ranges(self) -> dict:
         return self._seizure_ranges
 
     @seizure_ranges.setter
-    def seizure_ranges(self, file: str):
+    def seizure_ranges(self, file: str) -> None:
+        """
+        Read and parse a single metadata file
+        :param file: path to the metadata file
+        """
         self._seizure_ranges = {}
         clean_lines, single_file = [], []
 
@@ -114,7 +58,11 @@ class MetadataChb():
             self._seizure_ranges.update({filename: {"full_file": os.path.join(*(["/"] + file.split("/")[:-1] + [filename])),
                                                     "seizures": seizures}})
 
-    def get_seizure_single_file(self, text_lines: list) -> tuple:
+    def get_seizure_single_file(self, text_lines: list) -> Tuple[str, tuple]:
+        """
+        Detect the [start_time, end_time] for each seizure
+        :param text_lines: content of the metadata file
+        """   
         seizures = [(0.0, 0.0, "NULL")]
         filename = re.search("(?<=:)\s.+", text_lines[0]).group(0).strip()
         number_seizures = int(re.findall("(?<=:\s).+", text_lines[1])[0])
@@ -134,14 +82,22 @@ class MetadataChb():
 class MetadataSiena():
 
     def __init__(self, file: str):
+        """
+        :param file: path to the metadata file
+        """
+        self.seizure_types = settings["siena"]["seizure_types"]
         self.seizure_ranges = file
 
     @property
-    def seizure_ranges(self):
+    def seizure_ranges(self) -> dict:
         return self._seizure_ranges
 
     @seizure_ranges.setter
-    def seizure_ranges(self, file: str):
+    def seizure_ranges(self, file: str) -> None:
+        """
+        Read and parse a single metadata file
+        :param file: path to the metadata file
+        """
         self._seizure_ranges = {}
 
         with open(file) as fp:
@@ -150,14 +106,21 @@ class MetadataSiena():
         for index, line in enumerate(lines):
             if "File name" in line:
                 filename = line.split(" ")[-1][:-1]
+                patient_id = filename.split("-")[0]
                 seizures = self.get_seizure_single_file(lines[index+1:
-                                                             index+5])
+                                                             index+5],
+                                                        patient_id)
                 if filename not in self._seizure_ranges:
                     self._seizure_ranges[filename] = {"full_file": os.path.join(*(["/"] + file.split("/")[:-1] + [filename])),
                                                       "seizures": [(0.0, 0.0)]}
                 self._seizure_ranges[filename]["seizures"].append(seizures)
 
-    def get_seizure_single_file(self, text_lines: list) -> tuple:
+    def get_seizure_single_file(self, text_lines: list, patient_id: int) -> tuple:
+        """
+        Detect the [start_time, end_time] for each seizure
+        :param text_lines: content of the metadata file
+        :param patient_id: id of the patient
+        """   
         assert "Registration start" in text_lines[0]
         recording_start_time = re.search("(?<=:\s).*", text_lines[0]).group(0)
         seizure_start_time = re.search("(?<=:\s).*", text_lines[2]).group(0)
@@ -174,20 +137,28 @@ class MetadataSiena():
 
         start_seconds = (seizure_start_time - recording_start_time).seconds
         end_seconds = (seizure_end_time - recording_start_time).seconds
-        return (start_seconds, end_seconds)
+
+        return (start_seconds, end_seconds, self.seizure_types[patient_id])
 
 
 class MetadataTusz():
 
     def __init__(self, files: str):
+        """
+        :param files: list of paths to the metadata file
+        """
         self.seizure_ranges = files
 
     @property
-    def seizure_ranges(self):
+    def seizure_ranges(self) -> dict:
         return self._seizure_ranges
 
     @seizure_ranges.setter
-    def seizure_ranges(self, files: list):
+    def seizure_ranges(self, files: list) -> None:
+        """
+        Read and parse a set of metadata files
+        :param file: list of paths to the metadata file
+        """
         self._seizure_ranges = {}
 
         for file in files:
@@ -201,6 +172,10 @@ class MetadataTusz():
             self._seizure_ranges[filename]["seizures"].extend(seizure_ranges)
 
     def get_seizures_ranges(self, file) -> list:
+        """
+        Detect the [start_time, end_time] for each seizure
+        :param text_lines: content of the metadata file
+        """   
         seizures_ranges = []
         with open(file) as fp:
             lines = fp.readlines()
@@ -216,6 +191,11 @@ class MetadataTusz():
         return seizures_ranges
 
     def get_seizures_types(self, file: str, seizure_ranges: str) -> list:
+        """
+        Detect seizure for each ictal event
+        :param file: path to the metadata file
+        :param seizure_ranges: output of the method ´get_seizures_ranges´
+        """   
         seizure_types = set()
         with open(file) as fp:
             lines = fp.readlines()
@@ -244,22 +224,30 @@ class MetadataTusz():
 
 class MetadataListChb():
 
-    def __init__(self, root_dir: str=settings["chb-mit"]["dataset"]):
-        self.root_dir = root_dir
-        self.patient_metadata = root_dir
+    def __init__(self):
+        self.patient_metadata = settings["chb-mit"]["dataset"]
 
-    def get(self, patient: str, file: str):
+    def get(self, patient: str, file: str) -> dict:
+        """
+        Return seizure ocurrences
+        :param patient: patient ID
+        :param file: name of the edf file (without extension)
+        """
         file = file.split("/")[-1]
         patient_files = self._patient_metadata.get(patient)
         single_metadata = patient_files.seizure_ranges.get(file)
         return single_metadata
 
     @property
-    def patient_metadata(self):
+    def patient_metadata(self) -> dict:
         return self._patient_metadata
 
     @patient_metadata.setter
-    def patient_metadata(self, root_dir: str):
+    def patient_metadata(self, root_dir: str) -> None:
+        """
+        Read and parse all the metadata files
+        :param root_dir: dataset's base directory
+        """
         self._patient_metadata = {}
 
         for x in glob.glob(os.path.join(root_dir, "**/*-summary.txt")):
@@ -269,22 +257,30 @@ class MetadataListChb():
 
 class MetadataListSiena():
 
-    def __init__(self, root_dir: str=settings["siena"]["dataset"]):
-        self.root_dir = root_dir
-        self.patient_metadata = root_dir
+    def __init__(self):
+        self.patient_metadata = settings["siena"]["dataset"]
 
-    def get(self, patient: str, file: str):
+    def get(self, patient: str, file: str) -> dict:
+        """
+        Return seizure ocurrences
+        :param patient: patient ID
+        :param file: name of the edf file (without extension)
+        """
         file = file.split("/")[-1]
         patient_files = self._patient_metadata.get(patient)
         single_metadata = patient_files.seizure_ranges.get(file)
         return single_metadata
 
     @property
-    def patient_metadata(self):
+    def patient_metadata(self) -> dict:
         return self._patient_metadata
 
     @patient_metadata.setter
-    def patient_metadata(self, root_dir: str):
+    def patient_metadata(self, root_dir: str) -> None:
+        """
+        Read and parse all the metadata files
+        :param root_dir: dataset's base directory
+        """
         self._patient_metadata = {}
 
         for x in glob.glob(os.path.join(root_dir, "**/*.txt")):
@@ -294,22 +290,30 @@ class MetadataListSiena():
 
 class MetadataListTusz():
 
-    def __init__(self, root_dir: str=settings["tusz"]["dataset"]):
-        self.root_dir = root_dir
-        self.patient_metadata = root_dir
+    def __init__(self):
+        self.patient_metadata = settings["tusz"]["dataset"]
 
-    def get(self, patient: str, file: str):
+    def get(self, patient: str, file: str) -> dict:
+        """
+        Return seizure ocurrences
+        :param patient: patient ID
+        :param file: name of the edf file (without extension)
+        """
         file = file.split("/")[-1].split(".")[0]
         patient_files = self._patient_metadata.get(patient)
         single_metadata = patient_files.seizure_ranges.get(file)
         return single_metadata
 
     @property
-    def patient_metadata(self):
+    def patient_metadata(self) -> dict:
         return self._patient_metadata
 
     @patient_metadata.setter
-    def patient_metadata(self, root_dir: str):
+    def patient_metadata(self, root_dir: str) -> None:
+        """
+        Read and parse all the metadata files
+        :param root_dir: dataset's base directory
+        """
         _grouped_files = defaultdict(list)
         self._patient_metadata = {}
         for x in glob.glob(os.path.join(root_dir, "**/**/**/*.csv_bi")):

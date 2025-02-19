@@ -72,6 +72,14 @@ class EegProcessorBaseClass():
         self._data = self.filter_bank.apply_filter(self._data, "notch",
                                                    power_frequency=self.power_noise_frequency)
 
+    def rereference_to_average(self) -> None:
+        """
+        Set the reference to average reference
+        """
+        reference_data = self._data.mean(0, keepdims=True)
+        print(reference_data.shape)
+        self._data -= reference_data
+
 
 class EegProcessorChb(EegProcessorBaseClass):
 

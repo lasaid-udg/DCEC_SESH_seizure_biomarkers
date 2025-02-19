@@ -347,10 +347,6 @@ class IWasobi():
         intermediate_mix = numpy.add(numpy.transpose(sources),
                                      (-1) * numpy.dot(self.separation_matrix, self.signal_array_mean))
         return numpy.dot(self.mixing_matrix, numpy.transpose(intermediate_mix))
-    
-        #sources = numpy.transpose(numpy.add(numpy.transpose(numpy.dot(W, signals)),
-        #                                   numpy.dot(W, signal_array_mean)))
-        #return numpy.dot(self.mixing_matrix, sources)
 
 
 def principal_component_analysis(signal: numpy.array, number_components: str = "default",

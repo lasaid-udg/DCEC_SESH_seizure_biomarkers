@@ -3,36 +3,50 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 
-def generate_seizure_line(start: int, end: int, seizures: list) -> list:
+def generate_seizure_line(start_time: int, end_time: int, seizure_ranges: list) -> list:
+    """
+    Return a horizontal line if selected eeg period contains a seizure
+    :param start_time: start [sec] of the selected eeg period
+    :param end_time: end [sec] of the selected eeg period
+    :param seizure_ranges: list of [start_time, end_time] for each seizure
+    """
     horizontal_lines = []
 
-    for seizure in seizures[1:]:
-        if seizure[0] > start and seizure[0] < end:
-            x_coordinate = int(seizure[0])
+    for seizure_range in seizure_ranges[1:]:
+        if seizure_range[0] > start_time and seizure_range[0] < end_time:
+            x_coordinate = int(seizure_range[0])
             horizontal_lines.append([x_coordinate,  x_coordinate, "r"])
-        if seizure[1] > start and seizure[1] < end:
-            x_coordinate = int(seizure[1])
+        if seizure_range[1] > start_time and seizure_range[1] < end_time:
+            x_coordinate = int(seizure_range[1])
             horizontal_lines.append([x_coordinate,  x_coordinate, "b"])
     
     return horizontal_lines
 
 
-def plot_eeg_windows(data_array: np.array, metadata: list, channels_list: list,
+def plot_eeg_windows(eeg_array: np.array, metadata: dict, channels_list: list,
                      sampling_frequency: int, period: list, output_file: str = None):
-
+    """
+    Plot the eeg recording
+    :param eeg_array: matrix of eeg recordings [channels x samples]
+    :param metadata: details about seizure ranges
+    :param channel_list: list of channels
+    :param sampling_frequency: eeg sampling frequency [Hz]
+    :param period: selected eeg period [start_time, end_time]
+    :param output_file: if specified the figure will be saved
+    """
     grid_specs = GridSpec(1, 1, wspace=0.08, hspace=0.25)
     fig = plt.figure(figsize=(5.5, 4))
 
     time = np.linspace(period[0], period[1], int((period[1] - period[0]) * sampling_frequency))
-    data_array = data_array[:, int(time[0] * sampling_frequency): int(time[-1] * sampling_frequency)]
+    eeg_array = eeg_array[:, int(time[0] * sampling_frequency): int(time[-1] * sampling_frequency)]
 
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
-    space = np.max(np.max(data_array)) / 1.5
+    space = np.max(np.max(eeg_array)) / 1.5
 
     for count, channel in enumerate(channels_list):
-        ax.plot(time, data_array[count, :] - space * (count + 1), label=channel,
+        ax.plot(time, eeg_array[count, :] - space * (count + 1), label=channel,
                 linewidth=1)
 
     #########################################################
@@ -59,13 +73,18 @@ def plot_eeg_windows(data_array: np.array, metadata: list, channels_list: list,
     plt.show()
 
 
-def plot_frequency_and_phase_response(frequency_range: list, h: list, output_file: str = None):
+def plot_frequency_and_phase_response(frequency_range: list, response: list, output_file: str = None):
+    """
+    Plot the filter's frequency and phase response
+    :param frequency_range: the frequencies at which ´response´ was computed
+    :param h: the frequency response, as complex numbers
+    """
     grid_specs = GridSpec(2, 1, wspace=0.08, hspace=0.50)
     fig = plt.figure(figsize=(5.5, 4))
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
-    ax.plot(frequency_range, 20*np.log10(abs(h)), linewidth=1, color="r")
+    ax.plot(frequency_range, 20*np.log10(abs(response)), linewidth=1, color="r")
     ax.set_title("Filter Frequency Response", fontsize=8)
     ax.set_ylabel("Amplitude decrease [dB]", fontsize=8)
     ax.set_xlabel("Frequency [Hz]", fontsize=8)
@@ -74,7 +93,7 @@ def plot_frequency_and_phase_response(frequency_range: list, h: list, output_fil
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
-    ax.plot(frequency_range, np.unwrap(np.angle(h))*180/np.pi, linewidth=1, color="b")
+    ax.plot(frequency_range, np.unwrap(np.angle(response))*180/np.pi, linewidth=1, color="b")
     ax.set_title("Filter Phase Response", fontsize=8)
     ax.set_ylabel("Phase shift [deg]", fontsize=8)
     ax.set_xlabel("Frequency [Hz]", fontsize=8)
@@ -89,7 +108,14 @@ def plot_frequency_and_phase_response(frequency_range: list, h: list, output_fil
 
 def plot_eeg_spectrum(frequency_range: np.array, spectral_components: np.array, channels_list: list,
                       channel: str, output_file: str = None):
-
+    """
+    Plot the eeg spectrum
+    :param frequency_range: the frequencies at which spectral_components were computed
+    :param spectral_components: spectral components as complex numbers
+    :param channel_list: list of channels
+    :param channel: channel of interest
+    :param output_file: if specified the figure will be saved
+    """
     grid_specs = GridSpec(1, 2, wspace=0.2, hspace=0.25)
     fig = plt.figure(figsize=(8.5, 4))
     selected_channel = [idx for idx, _ in enumerate(channels_list)][0]
