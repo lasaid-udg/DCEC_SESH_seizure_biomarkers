@@ -77,7 +77,6 @@ class EegProcessorBaseClass():
         Set the reference to average reference
         """
         reference_data = self._data.mean(0, keepdims=True)
-        print(reference_data.shape)
         self._data -= reference_data
 
 

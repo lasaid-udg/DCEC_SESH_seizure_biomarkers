@@ -116,7 +116,7 @@ def plot_eeg_spectrum(frequency_range: np.array, spectral_components: np.array, 
     :param channel: channel of interest
     :param output_file: if specified the figure will be saved
     """
-    grid_specs = GridSpec(1, 2, wspace=0.2, hspace=0.25)
+    grid_specs = GridSpec(1, 1, wspace=0.2, hspace=0.25)
     fig = plt.figure(figsize=(8.5, 4))
     selected_channel = [idx for idx, _ in enumerate(channels_list)][0]
 
@@ -133,16 +133,16 @@ def plot_eeg_spectrum(frequency_range: np.array, spectral_components: np.array, 
     ax.yaxis.set_tick_params(labelsize=6)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    ax.plot(frequency_range[:20], np.angle(spectral_components[selected_channel, :20])*180/np.pi, label=channel,
-            linewidth=1, color="r")
+    #ax = fig.add_subplot(grid_specs[0, 1])
+    #ax.plot(frequency_range[:20], np.angle(spectral_components[selected_channel, :20])*180/np.pi, label=channel,
+    #        linewidth=1, color="r")
 
     #########################################################
-    ax.set_title(f"Spectrum (FFT), channel {channel}", fontsize=8)
-    ax.set_xlabel("Frequency [Hz]", fontsize=8)
-    ax.set_ylabel("Phase [deg]", fontsize=8)
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.yaxis.set_tick_params(labelsize=6)
+    #ax.set_title(f"Spectrum (FFT), channel {channel}", fontsize=8)
+    #ax.set_xlabel("Frequency [Hz]", fontsize=8)
+    #ax.set_ylabel("Phase [deg]", fontsize=8)
+    #ax.xaxis.set_tick_params(labelsize=8)
+    #ax.yaxis.set_tick_params(labelsize=6)
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
