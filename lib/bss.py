@@ -1,5 +1,7 @@
 import numpy
+import logging
 import scipy.linalg
+from typing import Tuple
 
 
 class IWasobi():
@@ -151,6 +153,7 @@ class IWasobi():
             R[index, :] = numpy.diag(Ms[:, id:id+number_channels])
 
         ARC, sigmy = self.armodel(R, rmax)
+
         AR3 = numpy.zeros((2*comparisons_per_channel-1, d2))
         ll = 0
         for i in range(1, number_channels):
@@ -181,7 +184,7 @@ class IWasobi():
 
         for id in range(d):
             AR[:, id] = numpy.r_[1, numpy.linalg.lstsq(-scipy.linalg.toeplitz(R[:M-1, id], R[:M-1, id].T),
-                                 R[1:M, id])[0]]
+                                                       R[1:M, id])[0]]
             v = numpy.roots(AR[:, id])
             vs = 0.5*(numpy.sign(numpy.abs(v)-1)+1)
             v = (1-vs)*v + vs/numpy.conj(v)
@@ -349,29 +352,194 @@ class IWasobi():
         return numpy.dot(self.mixing_matrix, numpy.transpose(intermediate_mix))
 
 
-def principal_component_analysis(signal: numpy.array, number_components: str = "default",
-                                 eigenvalues_ratio: str = 1e8) -> tuple:
-    """
-    Principal component analysis, returns the PCA matrix and the principal
-    components. The number of components is 'number_components' unless the
-    ratio between the maximum and minimum covariance eigenvalue is below
-    eigenvalues_ratio
-    """
-    number_components = signal.shape[0] if number_components == "default" else number_components
+class CanonicalCorrelation():
 
-    covariance_matrix = numpy.cov(signal)
-    eigenvalues, eigenvectors = numpy.linalg.eig(covariance_matrix)
-    absolute_eigenvalues = numpy.abs(eigenvalues)
-    sorted_indices = numpy.argsort(absolute_eigenvalues, )[::-1]
-    absolute_eigenvalues = absolute_eigenvalues[sorted_indices]
+    def __init__(self, delay: int=1):
+        self.delay = delay
 
-    while absolute_eigenvalues[0] / absolute_eigenvalues[number_components-1] > eigenvalues_ratio:
-        number_components -= 1
+    def fit(self, signals: numpy.array) -> Tuple[numpy.array, numpy.array]:
+        _, samples = tuple(signals.shape)
 
-    eigenvectors = eigenvectors[:, sorted_indices[:number_components]]
-    eigenvalues = numpy.diag(eigenvalues[sorted_indices[:number_components]] ** (-0.5))
+        y_matrix = signals[:, self.delay : ]
+        x_matrix = signals[:,  : -self.delay]
 
-    weights = numpy.matmul(eigenvalues, numpy.transpose(eigenvectors))
-    principal_components = numpy.matmul(weights, signal)
+        correlation_yy = numpy.matmul(y_matrix, numpy.transpose(y_matrix)) * (1/samples)
+        correlation_xx = numpy.matmul(x_matrix, numpy.transpose(x_matrix)) * (1/samples)
 
-    return weights, principal_components
+        correlation_xy = numpy.matmul(x_matrix, numpy.transpose(y_matrix)) * (1/samples)
+        correlation_yx = numpy.transpose(correlation_xy)
+
+        inv_correlation_yy = numpy.linalg.pinv(correlation_yy)
+        inv_correlation_xx = numpy.linalg.pinv(correlation_xx)
+
+        intermediate_matrix = numpy.matmul(inv_correlation_xx, correlation_xy)
+        intermediate_matrix = numpy.matmul(intermediate_matrix, inv_correlation_yy)
+        intermediate_matrix = numpy.matmul(intermediate_matrix, correlation_yx)
+        eigenvalues, eigenvectors = numpy.linalg.eig(intermediate_matrix)
+
+        sorted_indices = numpy.argsort(numpy.sqrt(abs(eigenvalues)))
+        eigenvectors = eigenvectors[:, sorted_indices]
+
+        sources = numpy.dot(eigenvectors, signals)
+
+        return eigenvectors, sources
+
+    
+    def fit_transform(self, signal: numpy.array) -> numpy.array:
+        """
+        Interface function for BSSCA algorithm.
+        IMPORTANT: If the maximum spread of eigenvalues is violated, the most redundant
+        mixtures will be discarded in the estimation process.
+        IMPORTANT: If the unkonwn mixing matrix is not of
+        full-column rank we will have that size(A,1)>size(W,1).
+        :param signal: array of eeg signal (channels first)
+        """
+        separation_matrix, separated_sources = self.fit(signal)
+        mixing_matrix = numpy.linalg.pinv(separation_matrix)
+        self.separation_matrix = separation_matrix
+        self.mixing_matrix = mixing_matrix
+        return separated_sources
+    
+    def inverse_transform(self, sources: numpy.array) -> numpy.array:
+        return numpy.dot(self.mixing_matrix, sources)
+
+
+class EogDenoiser:
+
+    def __init__(self):
+        self.fractal_dimensions = []
+        self.sources = None
+
+    def __str__(self):
+        for idx, dimension in enumerate(self.fractal_dimensions):
+            print(f"Source = {idx + 1}, fd = {dimension}")
+        return "Done!"
+
+    def fit_fractal_dimensions(self, sources: numpy.array) -> None:
+        """
+        Estimate fractal dimension for each source
+        :param sources: matrix with the eeg sources [sources x samples]
+        """
+        for idx in range(sources.shape[0]):
+            fractal_dimemsion = self.sevcik_fractal_dimension(sources[idx, :])
+            self.fractal_dimensions.append(fractal_dimemsion)
+        self.sources = sources
+        self.fractal_dimensions = numpy.array(self.fractal_dimensions)
+
+    def sevcik_fractal_dimension(self, source: numpy.array) -> float:
+        """
+        Computes the Sevcik dimension
+        :param source: 1d-source
+        """
+        x_axis_span = len(source)
+        y_axis_span = max(source) - min(source)
+        y_normalized_axis = source - max(source) / y_axis_span
+        x_normalized_axis = (1 / (x_axis_span-1)) * numpy.ones((1, x_axis_span-1))
+        y_axis_differences = y_normalized_axis[1:] - y_normalized_axis[: -1]
+        waveform_lenght = numpy.sum((numpy.sqrt(x_normalized_axis ** 2 + y_axis_differences ** 2)))
+        dimension = 1 + numpy.log(waveform_lenght / numpy.log(2 * (x_axis_span - 1)))
+        return dimension
+
+    def remove_low_dimension_sources(self, sources_range: list) -> numpy.array:
+        """
+        Remove EOG components according to their fractal dimensions
+        :param sources_range: range of components that can be removed
+        """
+        sorted_indices = numpy.argsort(self.fractal_dimensions)
+        self.fractal_dimensions = self.fractal_dimensions[sorted_indices]
+        fractal_distances = self.fractal_dimensions[1:] - self.fractal_dimensions[0:-1]
+
+        for idx in range(len(fractal_distances)):
+            if numpy.mean(numpy.cumsum(fractal_distances[idx + 1:])) < numpy.mean(numpy.cumsum(fractal_distances[0:idx])):
+                limit_index = idx
+                break
+        else:
+            limit_index = len(fractal_distances) -1
+        
+        if limit_index < sources_range[0]:
+            limit_index = sources_range[0]
+        elif limit_index > sources_range[1]:
+            limit_index = sources_range[1]
+        
+        logging.info(f"Number of sources to be removed = {limit_index}")
+        
+        for idx in sorted_indices[:limit_index]:
+            self.sources[idx, :] = 0
+        
+        return self.sources
+
+
+class EmgDenoiser:
+
+    def __init__(self, frequency_emg: int=15, sampling_frequency: int=None,
+                 ratio: int=10, ):
+        """
+        :param frequency_emg: frequency aproximately separating the EEG and EMG bands
+        :param sampling_frequency: sampling_frequency [Hz]
+        :param ratio: ratio of average power (per unit of frequency) in EEG
+                      band to average power in the EMG band below which a
+                      component will be considered to be EMG-related.
+        """
+        self.psd_ratio = []
+        self.sources = None
+        self.frequency_emg = frequency_emg
+        self.sampling_frequency = sampling_frequency
+        self.ratio = ratio
+
+    def __str__(self):
+        for idx, dimension in enumerate(self.psd_ratio):
+            print(f"Source = {idx + 1}, fd = {dimension}")
+        return "Done!"
+
+    def fit_psd_ratio(self, sources: numpy.array) -> None:
+        """
+        Compute the PSD ratio between typical eeg and emg bands
+        :param source: 1d-source
+        """
+        self.sources = sources
+        _, samples = tuple(sources.shape)
+        segment_length = min([2*self.sampling_frequency, int(samples/2)])
+        nfft_length = 2 ** numpy.ceil(numpy.log2(min([2*self.sampling_frequency, int(samples/2)])))
+
+        source_mean = numpy.mean(sources, axis=0)
+        centered_sources = numpy.subtract(sources, source_mean)
+
+        for idx in range(centered_sources.shape[0]):
+            freq_range, source_psd = scipy.signal.welch(centered_sources[idx, :], fs=self.sampling_frequency,
+                                                        window="hamming", nperseg=segment_length,
+                                                        nfft=nfft_length)
+            
+            idx = [x for x, _ in enumerate(freq_range) if x > self.frequency_emg][0]
+            eeg_band_power = numpy.mean(source_psd[:idx])
+            emg_band_power = numpy.mean(source_psd[idx:])
+            ratio = eeg_band_power / emg_band_power
+            self.psd_ratio.append(ratio)
+        
+        self.psd_ratio = numpy.array(self.psd_ratio)
+
+    def remove_low_ratio_sources(self, sources_range: list) -> numpy.array:
+        """
+        Remove EMG components according to their PSD ratio
+        :param sources_range: range of components that can be removed
+        """
+        sorted_indices = numpy.argsort(self.psd_ratio)
+        self.psd_ratio = self.psd_ratio[sorted_indices]
+
+        limit_index = 0
+        for i in self.psd_ratio:
+            if i > self.ratio:
+                break
+            limit_index += 1
+
+        if limit_index < sources_range[0]:
+            limit_index = sources_range[0]
+        elif limit_index > sources_range[1]:
+            limit_index = sources_range[1]
+        
+        logging.info(f"Number of sources to be removed = {limit_index}")
+        
+
+        for idx in sorted_indices[:limit_index]:
+            self.sources[idx, :] = 0
+        
+        return self.sources
