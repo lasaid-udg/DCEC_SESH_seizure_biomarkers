@@ -21,9 +21,6 @@ def main():
     for patient, patient_metadata in metadata.patient_metadata.items():
         logging.info(f"Analizyng patient = {patient}")
         seizure_counter = 0
-        if patient in ["chb01", "chb02", "chb03", "chb04", "chb05", "chb06", "chb07",
-                       "chb08", "chb09", "chb10", "chb11"]:
-            continue
         
         for filename, seizures in patient_metadata.seizure_ranges.items():
             logging.info((f"Analyzing file = {filename}"))

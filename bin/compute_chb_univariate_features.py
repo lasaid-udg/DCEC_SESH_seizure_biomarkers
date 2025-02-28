@@ -1,0 +1,55 @@
+#!/var/tmp/venv-project-1/bin/python
+"""
+Usage:
+    compute_chb_univariate_features.py (--feature=<feature>)
+"""
+import os
+import sys
+import pandas
+import logging
+import warnings
+from docopt import docopt
+warnings.filterwarnings("ignore")
+sys.path.append("../")
+from lib.slices import EegWindowsChb
+from lib.filters import BandEstimator
+from lib.features import UnivariateFeatureGateway
+
+
+FEATURE = docopt(__doc__)["--feature"]
+OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
+
+
+def main():
+    windows_chb = EegWindowsChb()
+    feature_estimator = UnivariateFeatureGateway()
+    feature_list = []
+
+    for metadata, windows in iter(windows_chb):
+        logging.info(f"Processing patient = {metadata['patient']}")
+        for window_number, seizure_stage in metadata["windows"].items():
+            eeg_array = windows[int(window_number), :, :]
+            delta, theta, alpha, beta = BandEstimator.get_eeg_bands(eeg_array,
+                                                                    metadata["sampling_frequency"])
+            
+            for band_name, band in zip(["delta", "theta", "alpha", "beta"], [delta, theta, alpha, beta]):
+                logging.info(f"Processing band = {metadata['patient']}")
+
+            for channel_number, channel_name in enumerate(metadata["channels"]): 
+                feature_value = feature_estimator(FEATURE, band[channel_number, :])
+                feature_list.append({"patient": metadata["patient"],
+                                     "band": band_name,
+                                     "seizure_type": metadata["seizure_type"],
+                                     "channel": channel_name,
+                                     "seizure_stage": seizure_stage[0],
+                                     "time_point": seizure_stage[1],
+                                     "feature": "kurtosis",
+                                     "value": feature_value})
+
+    feature_df = pandas.DataFrame(feature_list)
+    output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "features", "chb-mit", f"{FEATURE}.csv")
+    feature_df.to_csv(output_file_eeg, index=False)
+
+
+if __name__ == "__main__":
+    main()

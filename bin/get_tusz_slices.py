@@ -41,10 +41,14 @@ def main():
             try:
                 processor.select_channels()
             except KeyError as exc:
-                logging.error(f"Error found {exc}")
+                logging.error(f"Not valid channel set = {exc}")
                 continue
 
-            processor.resample()
+            try:
+                processor.resample()
+            except AssertionError as exc:
+                logging.error(f"Not valid sampling frequency = {exc}")
+                continue
 
             processor.filter_bank = FilterBank(0)
             processor.remove_drift()

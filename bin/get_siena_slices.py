@@ -7,8 +7,8 @@ import logging
 import warnings
 warnings.filterwarnings("ignore")
 sys.path.append("../")
-from lib.metadata import MetadataListChb
-from lib.signals import EegProcessorChb, EegSlicer
+from lib.metadata import MetadataListSiena
+from lib.signals import EegProcessorSiena, EegSlicer
 from lib.filters import FilterBank
 
 
@@ -16,14 +16,11 @@ OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 
 
 def main():
-    metadata = MetadataListChb()
+    metadata = MetadataListSiena()
 
     for patient, patient_metadata in metadata.patient_metadata.items():
         logging.info(f"Analizyng patient = {patient}")
         seizure_counter = 0
-        if patient in ["chb01", "chb02", "chb03", "chb04", "chb05", "chb06", "chb07",
-                       "chb08", "chb09", "chb10", "chb11"]:
-            continue
         
         for filename, seizures in patient_metadata.seizure_ranges.items():
             logging.info((f"Analyzing file = {filename}"))
@@ -34,7 +31,7 @@ def main():
                 continue
 
             try:
-                processor = EegProcessorChb(seizures["full_file"])
+                processor = EegProcessorSiena(seizures["full_file"])
             except FileNotFoundError as exc:
                 logging.error(f"Error found {exc}")
                 continue
@@ -62,7 +59,7 @@ def main():
             for slice_metadata, slice_eeg in slicer.compute_slices(seizures["seizures"], processor._data):
 
                 output_file_eeg = f"{patient}_{seizure_counter}.npy"
-                output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "slices", "chb-mit", output_file_eeg)
+                output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "slices", "siena", output_file_eeg)
                 numpy.save(output_file_eeg, slice_eeg)
 
                 slice_metadata["patient"] = patient
