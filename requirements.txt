@@ -1,6 +1,9 @@
+docopt
 jupyter
 mne
 python-dotenv
 PyYAML
 flake8
+scikit-learn
 scipy
+statsmodels
