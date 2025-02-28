@@ -112,7 +112,7 @@ class MetadataSiena():
                                                         patient_id)
                 if filename not in self._seizure_ranges:
                     self._seizure_ranges[filename] = {"full_file": os.path.join(*(["/"] + file.split("/")[:-1] + [filename])),
-                                                      "seizures": [(0.0, 0.0)]}
+                                                      "seizures": [(0.0, 0.0, "NULL")]}
                 self._seizure_ranges[filename]["seizures"].append(seizures)
 
     def get_seizure_single_file(self, text_lines: list, patient_id: int) -> tuple:

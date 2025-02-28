@@ -58,6 +58,16 @@ class FilterBank():
             return frequency_range, h
         return b, a
 
+    def bandpass_butter(self, cut_frequency: tuple=(0, 0), order: int=2) -> Tuple[numpy.array, numpy.array]:
+        """
+        Return numerator (b) and denominator (a) polynomials of the butterworth filter.
+        :param cut_frequency: critical frequency [Low Hz, High Hz]
+        """
+        b, a = scipy.signal.butter(order, cut_frequency,
+                                   "bandpass", fs=self.sampling_frequency)
+
+        return b, a
+
     def apply_filter(self, signal: numpy.array, filter_name: str, **kwargs) -> numpy.array:
         """
         Apply filter to a signal.
@@ -68,3 +78,15 @@ class FilterBank():
         b, a = getattr(self, filter_name)(**kwargs)
         signal = scipy.signal.filtfilt(b, a, signal)
         return signal
+
+
+class BandEstimator():
+
+    @classmethod
+    def get_eeg_bands(cls, eeg_array: numpy.array, sampling_frequency: int) -> tuple:
+        filter_bank = FilterBank(sampling_frequency)
+        delta = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][0])
+        theta = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][1])
+        alpha = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][2])
+        beta = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][3])
+        return delta, theta, alpha, beta

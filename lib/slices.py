@@ -1,0 +1,183 @@
+import os
+import glob
+import json
+import numpy
+from typing import Tuple
+from . import settings
+
+
+class EegSlices:
+
+    def __init__(self):
+        base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
+        base_path = os.path.join(base_path, "slices", self.DATASET)
+        self._metadata = {}
+        self.base_path = base_path
+        self.metadata = base_path
+
+    @property
+    def metadata(self) -> dict:
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, directory: str) -> None:
+        """
+        Load the metadata files from slices directory
+        :param directory: folder where slices are stored into
+        """
+        for x in glob.glob(os.path.join(directory, "*.json")):
+            with open(x, "r") as fp:
+                single_metadata = json.load(fp)
+            if single_metadata["patient"] not in self._metadata:
+                self._metadata[single_metadata["patient"]] = []
+            self._metadata[single_metadata["patient"]].append(single_metadata)
+    
+    def get(self, patient: str, seizure_number: str) -> Tuple[dict, numpy.array]:
+        """
+        Return metadata and eeg slice for a single patient
+        :param patient: patient id
+        :param seizure_number: seizure id
+        """
+        metadata = self._metadata[patient][seizure_number]
+        metadata["channels"] = settings[self.DATASET]["channels"]
+        eeg_slice = numpy.load(metadata["slice_file"])
+        return metadata, eeg_slice
+
+
+class EegSlicesChb(EegSlices):
+    DATASET = "chb-mit"
+
+
+class EegSlicesSiena(EegSlices):
+    DATASET = "siena"
+
+
+class EegSlicesTusz(EegSlices):
+    DATASET = "tusz"
+
+
+class WindowSelector:
+
+    def __init__(self, sampling_frequency):
+        """
+        :param sampling_frequency: sampling_frequency [Hz]
+        """
+        self.sampling_frequency = sampling_frequency
+        self.window_lenght = settings["window_length"] * sampling_frequency
+        self.tolerance_lenght = settings["tolerance_length"] * sampling_frequency
+        self.preictal_windows_start = settings["preictal_windows_start"]
+        self.postictal_windows_start = settings["postictal_windows_start"]
+    
+    def get_preictal_windows(self, metadata: dict, eeg_array: numpy.array) -> list:
+        """
+        :param metadata: seizure and eeg recording details
+        :param eeg_array: eeg recording [channels x samples]
+        """
+        seizure_start = metadata["seizure_start"] * self.sampling_frequency
+        windows = list()
+
+        counter = len(metadata["windows"])
+        for start in self.preictal_windows_start:
+            metadata["windows"][counter] = ("preictal", start)
+            window_end = (seizure_start - self.tolerance_lenght) - start * self.sampling_frequency
+            window_start = window_end - self.window_lenght
+            windows.append(eeg_array[:, window_start: window_end])
+            counter += 1
+        
+        return windows
+
+    def get_ictal_windows(self, metadata: dict, eeg_array: numpy.array) -> list:
+        """
+        :param metadata: seizure and eeg recording details
+        :param eeg_array: eeg recording [channels x samples]
+        """
+        counter = len(metadata["windows"])
+
+        seizure_start = metadata["seizure_start"] * self.sampling_frequency
+        window_start = (seizure_start + self.tolerance_lenght)
+        window_end = window_start + self.window_lenght
+        window_1 = eeg_array[:, window_start: window_end]
+        metadata["windows"][counter] = ("ictal", 1)
+
+        seizure_end = metadata["seizure_end"] * self.sampling_frequency
+        window_end = (seizure_end - self.tolerance_lenght)
+        window_start = window_end - self.window_lenght
+        window_2 = eeg_array[:, window_start: window_end]
+        metadata["windows"][counter + 1] = ("ictal", -1)
+
+        return [window_1, window_2]
+
+
+    def get_postictal_windows(self, metadata: dict, eeg_array: numpy.array) -> list:
+        """
+        :param metadata: seizure and eeg recording details
+        :param eeg_array: eeg recording [channels x samples]
+        """
+        seizure_end = metadata["seizure_end"] * self.sampling_frequency
+        windows = list()
+
+        counter = len(metadata["windows"])
+        for start in self.postictal_windows_start:
+            metadata["windows"][counter] = ("postictal", start)
+            window_start = (seizure_end + self.tolerance_lenght) + start * self.sampling_frequency
+            window_end = window_start + self.window_lenght
+            windows.append(eeg_array[:, window_start: window_end])
+            counter += 1
+        
+        return windows
+
+    def get_windows(self, metadata: dict, eeg_array: numpy.array, ) -> Tuple[dict, numpy.array]:
+        """
+        Compute the eeg windows for pre-, post- and ictal stages
+        :param metadata: seizure and eeg recording details
+        :param eeg_array: eeg recording [channels x samples]
+        """
+        metadata["windows"] = dict()
+        preictal_windows = self.get_preictal_windows(metadata, eeg_array)
+        ictal_windows = self.get_ictal_windows(metadata, eeg_array)
+        postictal_windows = self.get_postictal_windows(metadata, eeg_array)
+
+        return metadata, numpy.stack(preictal_windows + ictal_windows + postictal_windows)
+
+
+class EegWindows:
+
+    def __init__(self):
+        base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
+        base_path = os.path.join(base_path, "windows", self.DATASET)
+        self.file_list = base_path
+
+    def __iter__(self):
+        self._counter = 0
+        return self
+    
+    def __next__(self) -> Tuple[str, str]:
+        if self._counter >= len(self._file_list):
+            raise StopIteration
+        metadata, windows = self._file_list[self._counter]
+
+        windows = numpy.load(windows)
+        with open(metadata) as fp:
+            metadata = json.load(fp)
+
+        self._counter += 1
+
+        return metadata, windows
+
+    @property
+    def file_list(self) -> list:
+        return self._file_list
+
+    @file_list.setter
+    def file_list(self, directory: str) -> None:
+        """
+        Read list of files for metadata and eeg windows
+        :param directory: windows directory
+        """
+        metadata_files = sorted(glob.glob(os.path.join(directory, "*.json")))
+        windows_files = sorted(glob.glob(os.path.join(directory, "*.npy")))
+        self._file_list = [(metadata, window) for metadata, window in zip(metadata_files, windows_files)]
+
+
+class EegWindowsChb(EegWindows):
+    DATASET = "chb-mit"

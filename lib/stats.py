@@ -54,10 +54,14 @@ class StatisticalTests():
 
         if is_stationary_adf and is_stationary_kpss:
             logging.info("The time serie is stationary")
+            return "The time serie is stationary"
         elif not is_stationary_adf and not is_stationary_kpss:
-            logging.info("The time serie is stationary")
+            logging.info("The time serie is not stationary")
+            return "The time serie is not stationary"
         elif not is_stationary_adf and is_stationary_kpss:
-            logging.info("The series is trend stationary  (not strict stationarity).")
+            logging.info("The series is trend stationary  (not strict stationarity)")
+            return "The series is trend stationary  (not strict stationarity)."
         elif is_stationary_adf and not is_stationary_kpss:
             logging.info("The series is difference stationary (not strict stationarity)")
+            return "The series is difference stationary (not strict stationarity)"
         

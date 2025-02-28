@@ -3,6 +3,7 @@ import mne
 import logging
 import numpy as numpy
 import scipy.signal
+from typing import Iterable
 from . import settings
 
 
@@ -78,6 +79,19 @@ class EegProcessorBaseClass():
         """
         reference_data = self._data.mean(0, keepdims=True)
         self._data -= reference_data
+    
+    @classmethod
+    def standardize(cls, eeg_array: numpy.array) -> numpy.array:
+        """
+        Remove the mean and divide by the standard deviation
+        :param eeg_array: matrix with the eeg recording [channels x samples]
+        """
+        signal_mean = numpy.mean(eeg_array, axis=1)
+        signal_std = numpy.std(eeg_array, axis=1)
+
+        for idx in range(len(signal_std.shape)):
+            eeg_array[idx, :] = (eeg_array[idx, :] - signal_mean[idx]) / signal_std[idx]
+        return eeg_array
 
 
 class EegProcessorChb(EegProcessorBaseClass):
@@ -193,7 +207,7 @@ class EegProcessorTusz(EegProcessorBaseClass):
         """
         data = mne.io.read_raw_edf(filename)
         self._data = data.get_data()
-        self.f_samp = data.info["sfreq"]
+        self.sampling_frequency = data.info["sfreq"]
         self.channels = data.ch_names
         logging.info(f"Recording contains channels = {self.channels}")
 
@@ -214,3 +228,50 @@ class EegProcessorTusz(EegProcessorBaseClass):
             new_channel = (self._data[channels_to_idx[channel.lower()], :])
             temp_eeg[idx, :] = new_channel
         self._data = temp_eeg
+
+
+class EegSlicer():
+
+    def __init__(self, sampling_frequency: int):
+        """
+        :param sampling_frequency: sampling_frequency [Hz]
+        """
+        self.preictal_min_length = settings["preictal_min_length"]
+        self.ictal_min_lenght = settings["ictal_min_lenght"]
+        self.postictal_min_lenght = settings["postictal_min_lenght"]
+        self.sampling_frequency = sampling_frequency
+
+    def compute_slices(self, seizure_ranges: str, eeg_array: numpy.array) -> Iterable[tuple]:
+        """
+        Split a full seizure cycle: preictal stage - ictal stage - postictal state.
+        Eeg array and metadata are stored.
+        :param seizure_ranges: list of seizure ocurrences [start time, end time, seizure type]
+        :param eeg_array: full eeg recording
+        """
+        for idx in range(1, len(seizure_ranges[:-1])):
+            if (seizure_ranges[idx][0] - seizure_ranges[idx-1][1]) < self.preictal_min_length:
+                logging.info(f"Preictal period is less than = {self.preictal_min_length}, skipping seizure")
+                continue
+            if (seizure_ranges[idx][1] - seizure_ranges[idx][0]) < self.preictal_min_length:
+                logging.info(f"Ictal period is less than = {self.ictal_min_lenght}, skipping seizure")
+                continue
+            if (seizure_ranges[idx + 1][0] - seizure_ranges[idx][1]) < self.postictal_min_lenght:
+                logging.info(f"Postictal period is less than = {self.postictal_min_lenght}, skipping seizure")
+                continue
+
+            logging.info("Seizure meets the pre-, post- and ictal tolerance")
+
+            slice_start = (seizure_ranges[idx][0] - self.preictal_min_length) * self.sampling_frequency
+            slice_end = (seizure_ranges[idx][1] + self.postictal_min_lenght) * self.sampling_frequency
+
+            seizure_duration = seizure_ranges[idx][1] - seizure_ranges[idx][0]
+            new_seizure_start = self.preictal_min_length
+            new_seizure_end = int(self.preictal_min_length + seizure_duration)
+            eeg_slice = eeg_array[:, int(slice_start): int(slice_end)]
+            metadata = {"seizure_type": seizure_ranges[idx][2],
+                        "seizure_start": new_seizure_start,
+                        "seizure_end": new_seizure_end}
+
+            logging.info(f"Valid slice was found, seizure_duration = {new_seizure_end - new_seizure_start}")
+            
+            yield metadata, eeg_slice
