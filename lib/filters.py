@@ -58,14 +58,19 @@ class FilterBank():
             return frequency_range, h
         return b, a
 
-    def bandpass_butter(self, cut_frequency: tuple=(0, 0), order: int=2) -> Tuple[numpy.array, numpy.array]:
+    def bandpass_butter(self, cut_frequency: tuple=(0, 0), order: int=2,
+                        get_freqz: bool=False) -> Tuple[numpy.array, numpy.array]:
         """
         Return numerator (b) and denominator (a) polynomials of the butterworth filter.
         :param cut_frequency: critical frequency [Low Hz, High Hz]
+        :param get_freqz: if true it will return the filter's frequency response
         """
         b, a = scipy.signal.butter(order, cut_frequency,
                                    "bandpass", fs=self.sampling_frequency)
 
+        if get_freqz:
+            frequency_range, h = scipy.signal.freqz(b, a, fs=self.sampling_frequency)
+            return frequency_range, h
         return b, a
 
     def apply_filter(self, signal: numpy.array, filter_name: str, **kwargs) -> numpy.array:

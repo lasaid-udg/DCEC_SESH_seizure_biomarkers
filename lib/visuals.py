@@ -1,3 +1,5 @@
+import pandas
+import seaborn
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -132,17 +134,155 @@ def plot_eeg_spectrum(frequency_range: np.array, spectral_components: np.array, 
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
 
-    #########################################################
-    #ax = fig.add_subplot(grid_specs[0, 1])
-    #ax.plot(frequency_range[:20], np.angle(spectral_components[selected_channel, :20])*180/np.pi, label=channel,
-    #        linewidth=1, color="r")
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+
+def plot_stationarity_bar_chart(stationarity_results: list, windows_lenghths: list):
+    """
+    Plot the amount of stationary windows as per KPSS and ADF tests
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.2, hspace=0.2)
+    fig = plt.figure(figsize=(7, 5))
 
     #########################################################
-    #ax.set_title(f"Spectrum (FFT), channel {channel}", fontsize=8)
-    #ax.set_xlabel("Frequency [Hz]", fontsize=8)
-    #ax.set_ylabel("Phase [deg]", fontsize=8)
-    #ax.xaxis.set_tick_params(labelsize=8)
-    #ax.yaxis.set_tick_params(labelsize=6)
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.barplot(stationarity_results[0], x="result", y="count", ax=ax, palette="pastel")
+    ax.set_title(f"Windows length = {windows_lenghths[0]}s", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("")
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.barplot(stationarity_results[1], x="result", y="count", ax=ax, palette="pastel")
+    ax.set_title(f"Windows length = {windows_lenghths[1]}s", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("")
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, :])
+    seaborn.barplot(stationarity_results[2], x="result", y="count", ax=ax, palette="pastel")
+    ax.set_title(f"Windows length = {windows_lenghths[2]}s", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.set_ylabel("Count", fontsize=8)
+    ax.set_xlabel("Stationarity result", fontsize=8)
+
+
+def plot_univariate_bar_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
+                          alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                          output_file: str=None):
+    """
+    Plot the eeg univariate features per band
+    :param delta: 
+    :param theta: 
+    :param alpha: 
+    :param beta:
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.20)
+    fig = plt.figure(figsize=(7, 5))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.barplot(delta, x="seizure_stage", y="value", hue="time_point", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_xlabel("\n a) delta", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.barplot(theta, x="seizure_stage", y="value", hue="time_point", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("\n b) theta", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.barplot(alpha, x="seizure_stage", y="value", hue="time_point", ax=ax, palette="pastel")
+    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_xlabel("Seizure stage \n\n c) alpha", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.barplot(beta, x="seizure_stage", y="value", hue="time_point", ax=ax, palette="pastel")
+    ax.set_xlabel("Seizure stage \n\n d) beta", fontsize=8)
+    ax.get_legend().remove()
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+
+def plot_univariate_dist_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
+                               alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                               output_file: str=None):
+    """
+    Plot the eeg univariate features per band
+    :param delta: 
+    :param theta: 
+    :param alpha: 
+    :param beta:
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.20)
+    fig = plt.figure(figsize=(7, 5))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.kdeplot(delta, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("Density", fontsize=8)
+    ax.set_xlabel("\n a) delta", fontsize=8)
+    ax.get_legend().set_title(None)
+    texts = ax.get_legend().get_texts()
+    for t in texts:
+        t.set_size('x-small')
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.kdeplot(theta, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("\n b) theta", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.kdeplot(alpha, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.set_ylabel("Density", fontsize=8)
+    ax.set_xlabel("Feature value \n\n c) alpha", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.kdeplot(beta, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.set_xlabel("Feature value \n\n d) beta", fontsize=8)
+    ax.get_legend().remove()
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,

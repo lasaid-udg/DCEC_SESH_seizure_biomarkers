@@ -9,6 +9,8 @@ from . import settings
 
 class EegProcessorBaseClass():
 
+    EXPECTED_SAMPLING_FREQUENCIES = [250, 256] 
+
     def __init__(self, filename: str):
         """
         :param filename: full path of the edf file
@@ -27,17 +29,23 @@ class EegProcessorBaseClass():
 
     def resample(self) -> None:
         """
-        Downsample the signal to match the EXPECTED_SAMPLING_FREQUENCY.
+        Downsample the signal to match any of EXPECTED_SAMPLING_FREQUENCIES.
         Raise error if current sampling frequency is lower than or
-        not a multiple of EXPECTED_SAMPLING_FREQUENCY
+        not a multiple of any of EXPECTED_SAMPLING_FREQUENCIES
         """
-        assert self.sampling_frequency >= self.EXPECTED_SAMPLING_FREQUENCY
-        assert self.sampling_frequency % self.EXPECTED_SAMPLING_FREQUENCY == 0
+        for expected_frequency in self.EXPECTED_SAMPLING_FREQUENCIES:
+            if (self.sampling_frequency >= expected_frequency and 
+                self.sampling_frequency % expected_frequency == 0):
+                selected_frequency = expected_frequency
+                break
+        else:
+            assert False, "Not a valid sampling frequency"
 
-        downsampling_factor = int(self.sampling_frequency / self.EXPECTED_SAMPLING_FREQUENCY)
+        logging.info(f"Selected frequency is = {selected_frequency}")
+        downsampling_factor = int(self.sampling_frequency /selected_frequency)
         logging.info(f"Dowsampling factor is = {downsampling_factor}")
         self._data = scipy.signal.decimate(self._data, downsampling_factor)
-        self.sampling_frequency = self.EXPECTED_SAMPLING_FREQUENCY
+        self.sampling_frequency = selected_frequency
 
     def scale(self, ekg_reference: bool=False) -> None:
         """
@@ -97,7 +105,6 @@ class EegProcessorBaseClass():
 class EegProcessorChb(EegProcessorBaseClass):
 
     DATASET = "chb-mit"
-    EXPECTED_SAMPLING_FREQUENCY = 256
 
     def __init__(self, filename: str):
         """
@@ -140,7 +147,6 @@ class EegProcessorChb(EegProcessorBaseClass):
 class EegProcessorSiena(EegProcessorBaseClass):
 
     DATASET = "siena"
-    EXPECTED_SAMPLING_FREQUENCY = 256
 
     def __init__(self, filename: str):
         """
@@ -187,7 +193,6 @@ class EegProcessorSiena(EegProcessorBaseClass):
 class EegProcessorTusz(EegProcessorBaseClass):
 
     DATASET = "tusz"
-    EXPECTED_SAMPLING_FREQUENCY = 256
 
     def __init__(self, filename: str):
         """
@@ -237,7 +242,7 @@ class EegSlicer():
         :param sampling_frequency: sampling_frequency [Hz]
         """
         self.preictal_min_length = settings["preictal_min_length"]
-        self.ictal_min_lenght = settings["ictal_min_lenght"]
+        self.ictal_min_length = settings["ictal_min_lenght"]
         self.postictal_min_lenght = settings["postictal_min_lenght"]
         self.sampling_frequency = sampling_frequency
 
@@ -252,8 +257,8 @@ class EegSlicer():
             if (seizure_ranges[idx][0] - seizure_ranges[idx-1][1]) < self.preictal_min_length:
                 logging.info(f"Preictal period is less than = {self.preictal_min_length}, skipping seizure")
                 continue
-            if (seizure_ranges[idx][1] - seizure_ranges[idx][0]) < self.preictal_min_length:
-                logging.info(f"Ictal period is less than = {self.ictal_min_lenght}, skipping seizure")
+            if (seizure_ranges[idx][1] - seizure_ranges[idx][0]) < self.ictal_min_length:
+                logging.info(f"Ictal period is less than = {self.ictal_min_length}, skipping seizure")
                 continue
             if (seizure_ranges[idx + 1][0] - seizure_ranges[idx][1]) < self.postictal_min_lenght:
                 logging.info(f"Postictal period is less than = {self.postictal_min_lenght}, skipping seizure")

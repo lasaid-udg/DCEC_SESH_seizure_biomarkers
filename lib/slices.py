@@ -181,3 +181,11 @@ class EegWindows:
 
 class EegWindowsChb(EegWindows):
     DATASET = "chb-mit"
+
+
+class EegWindowsSiena(EegWindows):
+    DATASET = "siena"
+
+
+class EegWindowsTusz(EegWindows):
+    DATASET = "tusz"
