@@ -1,14 +1,50 @@
 drift_frequency: 0.5        # Hertz
 hfo_frequency: 80           # Hertz
 notch_qa_factor: 20
-highpass_butter_order: 5    # Hertz
-lowpass_butter_order: 5     # Hertz
+drift_butter_order: 4
+hfo_butter_order: 6 
 
+####################################
+preictal_min_length: 60
+ictal_min_lenght: 12
+postictal_min_lenght: 60
+
+####################################
+window_length: 5            # Seconds [5sec, 2sec, 1sec]
+tolerance_length: 1         # Seconds
+preictal_windows_start:
+  - 0
+  - 10
+  - 30
+postictal_windows_start:
+  - 0
+  - 10
+  - 30
+intra_windows_categories:
+  - [preictal, 30, 1, "31s before"]
+  - [preictal, 10, 2, "11s before"]
+  - [preictal, 0, 3, "1s before"]
+  - [ictal, 1, 1, "Start of seizure"]
+  - [ictal, -1, 2,"End of seizure"]
+  - [postictal, 30, 3, "31s after"]
+  - [postictal, 10, 2, "11s after"]
+  - [postictal, 0, 1, "1s after"]
+  
+
+####################################
+band_specifications:
+  - {"cut_frequency": [0.5, 4], "order": 4}      # Delta band
+  - {"cut_frequency": [4, 8],   "order": 4}      # Theta band
+  - {"cut_frequency": [8, 12],  "order": 4}      # Alpha band
+  - {"cut_frequency": [12, 30], "order": 4}      # Beta band
+
+####################################
 chb-mit:
   epoch_size: 2             # Seconds  
   f_samp: 256               # Hertz
   gain: 2.559375
   units: 0.000001           # Microvolts
+  ekg_units:
   power_noise_frequency: 60 #Hertz
 
   seizure_type: null
@@ -30,6 +66,26 @@ chb-mit:
     - F8-T8
     - T8-P8
     - P8-O2
+  
+  univariate_channels_groups:
+    left:
+      - FP1-F7
+      - F7-T7
+      - T7-P7
+      - P7-O1
+      - FP1-F3
+      - F3-C3
+      - C3-P3
+      - P3-O1
+    right:
+    - FP2-F4
+    - F4-C4
+    - C4-P4
+    - P4-O2
+    - FP2-F8
+    - F8-T8
+    - T8-P8
+    - P8-O2
 
 
 siena:
@@ -37,23 +93,28 @@ siena:
   f_samp: 512
   gain: 1
   units: 0.000001  # Microvolts  
+  ekg_units: 0.00001
   power_noise_frequency: 50 #Hertz
 
-  seizure_type:
-    PN00: IAS-T
-    PN01: IAS-T
-    PN03: IAS-T
-    PN05: IAS-T
-    PN06: IAS-T
-    PN07: IAS-T
-    PN09: IAS-T
-    PN10: FBTC-F
-    PN11: IAS-T
-    PN12: IAS-T
-    PN13: IAS-T
-    PN14: WIAS-T
-    PN16: IAS-T
-    PN17: IAS-T
+  valid_seizure_types:
+    - IAS-T-Right
+    - IAS-T-Left
+
+  seizure_types:
+    PN00: IAS-T-Right
+    PN01: IAS-T-Left
+    PN03: IAS-T-Right
+    PN05: IAS-T-Left
+    PN06: IAS-T-Left
+    PN07: IAS-T-Left
+    PN09: IAS-T-Left
+    PN10: FBTC-F-Bilateral
+    PN11: IAS-T-Right
+    PN12: IAS-T-Left
+    PN13: IAS-T-Left
+    PN14: WIAS-T-Left
+    PN16: IAS-T-Left
+    PN17: IAS-T-Right
 
   channels:
     - Fp1
@@ -76,13 +137,47 @@ siena:
     - Cz
     - Pz
 
+  univariate_channels_groups:
+    frontal:
+      - Fp1
+      - Fp2
+      - F3
+      - F4
+      - F7
+      - F8
+      - Fz
+    temporal:
+      - T3
+      - T4
+      - T5
+      - T6
+    parietal:
+      - P3
+      - P4
+      - Pz
+      - C3
+      - C4
+      - Cz
+    occipital:
+      - O1
+      - O2
 
 tusz:
   #epoch_size: 2           # 2 seconds  
   f_samp: 512
   gain: 1
   units: 0.000001  # Microvolts
+  ekg_units:
   power_noise_frequency: 60 #Hertz
+
+  valid_seizure_types:
+    - absz
+    - cpsz
+    - fnsz
+    - gnsz
+    - spsz
+    - tcsz
+    - tnsz
 
   channels:
     - Fp1
@@ -104,3 +199,31 @@ tusz:
     - Fz
     - Cz
     - Pz
+  
+  univariate_channels_groups:
+    frontal:
+      - Fp1
+      - Fp2
+      - F3
+      - F4
+      - F7
+      - F8
+      - Fz
+    temporal:
+      - T3
+      - T4
+      - T5
+      - T6
+    parietal:
+      - P3
+      - P4
+      - Pz
+      - C3
+      - C4
+      - Cz
+    occipital:
+      - O1
+      - O2
+
+univariate_features:
+  - kurtosis
