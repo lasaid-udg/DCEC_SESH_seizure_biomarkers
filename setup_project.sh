@@ -30,6 +30,9 @@ BIOMARKERS_PROJECT_HOME="$(head -1 .env | cut -d "=" -f 2)"
 mkdir ${BIOMARKERS_PROJECT_HOME}/data
 mkdir ${BIOMARKERS_PROJECT_HOME}/docs
 mkdir ${BIOMARKERS_PROJECT_HOME}/images
+mkdir ${BIOMARKERS_PROJECT_HOME}/images/chb-mit
+mkdir ${BIOMARKERS_PROJECT_HOME}/images/siena
+mkdir ${BIOMARKERS_PROJECT_HOME}/images/tusz
 mkdir ${BIOMARKERS_PROJECT_HOME}/slices/
 mkdir ${BIOMARKERS_PROJECT_HOME}/slices/chb-mit
 mkdir ${BIOMARKERS_PROJECT_HOME}/slices/siena

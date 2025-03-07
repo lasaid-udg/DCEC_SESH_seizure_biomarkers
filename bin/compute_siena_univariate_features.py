@@ -1,7 +1,7 @@
 #!/var/tmp/venv-project-1/bin/python
 """
 Usage:
-    compute_chb_univariate_features.py (--feature=<feature>)
+    compute_siena_univariate_features.py (--feature=<feature>)
 """
 import os
 import sys
@@ -11,7 +11,7 @@ import warnings
 from docopt import docopt
 warnings.filterwarnings("ignore")
 sys.path.append("../")
-from lib.slices import EegWindowsChb
+from lib.slices import EegWindowsSiena
 from lib.filters import BandEstimator
 from lib.features import UnivariateFeatureGateway
 
@@ -21,12 +21,12 @@ OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 
 
 def main():
-    windows_chb = EegWindowsChb()
+    windows_siena = EegWindowsSiena()
     feature_estimator = UnivariateFeatureGateway()
     feature_list = []
     counter = 0
 
-    for metadata, windows in iter(windows_chb):
+    for metadata, windows in iter(windows_siena):
         logging.info(f"Processing patient = {metadata['patient']}")
         counter += 1
         for window_number, seizure_stage in metadata["windows"].items():
@@ -50,7 +50,7 @@ def main():
                                         "value": feature_value})
 
     feature_df = pandas.DataFrame(feature_list)
-    output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "features", "chb-mit", f"{FEATURE}.csv")
+    output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "features", "siena", f"{FEATURE}.csv")
     feature_df.to_csv(output_file_eeg, index=False)
 
 

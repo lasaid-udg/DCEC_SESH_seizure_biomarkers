@@ -1,6 +1,7 @@
 docopt
 jupyter
 mne
+pandasql
 python-dotenv
 PyYAML
 flake8

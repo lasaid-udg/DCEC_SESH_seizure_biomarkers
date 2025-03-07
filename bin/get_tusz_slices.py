@@ -21,7 +21,7 @@ def main():
     for patient, patient_metadata in metadata.patient_metadata.items():
         logging.info(f"Analizyng patient = {patient}")
         seizure_counter = 0
-        
+
         for filename, seizures in patient_metadata.seizure_ranges.items():
             logging.info((f"Analyzing file = {filename}"))
             logging.info((f"Number of seizures = {len(seizures['seizures']) - 1}"))
