@@ -12,7 +12,7 @@ from lib.stats import StatisticalTests
 
 
 OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
-WINDOW_PROPOSALS = [1, 2, 5]
+WINDOW_PROPOSALS = [0.5, 1, 3, 5]
 
 
 def main():
