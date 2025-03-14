@@ -2,6 +2,7 @@ import os
 import glob
 import json
 import numpy
+import random
 from typing import Tuple
 from . import settings
 
@@ -55,6 +56,9 @@ class EegSlicesSiena(EegSlices):
 class EegSlicesTusz(EegSlices):
     DATASET = "tusz"
 
+class EegSlicesTuep(EegSlices):
+    DATASET = "tuep"
+
 
 class WindowSelector:
 
@@ -81,7 +85,7 @@ class WindowSelector:
             metadata["windows"][counter] = ("preictal", start)
             window_end = (seizure_start - self.tolerance_lenght) - start * self.sampling_frequency
             window_start = window_end - self.window_lenght
-            windows.append(eeg_array[:, window_start: window_end])
+            windows.append(eeg_array[:, int(window_start): int(window_end)])
             counter += 1
         
         return windows
@@ -96,13 +100,13 @@ class WindowSelector:
         seizure_start = metadata["seizure_start"] * self.sampling_frequency
         window_start = (seizure_start + self.tolerance_lenght)
         window_end = window_start + self.window_lenght
-        window_1 = eeg_array[:, window_start: window_end]
+        window_1 = eeg_array[:, int(window_start): int(window_end)]
         metadata["windows"][counter] = ("ictal", 1)
 
         seizure_end = metadata["seizure_end"] * self.sampling_frequency
         window_end = (seizure_end - self.tolerance_lenght)
         window_start = window_end - self.window_lenght
-        window_2 = eeg_array[:, window_start: window_end]
+        window_2 = eeg_array[:, int(window_start): int(window_end)]
         metadata["windows"][counter + 1] = ("ictal", -1)
 
         return [window_1, window_2]
@@ -121,7 +125,7 @@ class WindowSelector:
             metadata["windows"][counter] = ("postictal", start)
             window_start = (seizure_end + self.tolerance_lenght) + start * self.sampling_frequency
             window_end = window_start + self.window_lenght
-            windows.append(eeg_array[:, window_start: window_end])
+            windows.append(eeg_array[:, int(window_start): int(window_end)])
             counter += 1
         
         return windows
@@ -139,6 +143,16 @@ class WindowSelector:
 
         return metadata, numpy.stack(preictal_windows + ictal_windows + postictal_windows)
 
+    def get_random_window(self, metadata: dict, eeg_array: numpy.array, ) -> Tuple[dict, numpy.array]:
+        """
+        Crop a random window from eeg_array
+        :param metadata: seizure and eeg recording details
+        :param eeg_array: eeg recording [channels x samples]
+        """
+        window_start = random.randint(0, eeg_array.shape[1] - self.window_lenght)
+        window_end = window_start + self.window_lenght
+        eeg_window = eeg_array[:, int(window_start): int(window_end)]
+        return metadata, eeg_window
 
 class EegWindows:
 
@@ -189,3 +203,7 @@ class EegWindowsSiena(EegWindows):
 
 class EegWindowsTusz(EegWindows):
     DATASET = "tusz"
+
+
+class EegWindowsTuep(EegWindows):
+    DATASET = "tuep"

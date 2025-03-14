@@ -1,5 +1,6 @@
 import re
 import mne
+import random
 import logging
 import numpy as numpy
 import scipy.signal
@@ -235,6 +236,51 @@ class EegProcessorTusz(EegProcessorBaseClass):
         self._data = temp_eeg
 
 
+class EegProcessorTuep(EegProcessorBaseClass):
+
+    DATASET = "tuep"
+
+    def __init__(self, filename: str):
+        """
+        :param filename: full path of the edf file
+        """
+        super().__init__(filename)
+
+    @property
+    def data(self) -> numpy.array:
+        return self._data
+
+    @data.setter
+    def data(self, filename: str) -> None:
+        """
+        Read eeg recording and channels from edf file
+        :param filename: full path of the edf file
+        """
+        data = mne.io.read_raw_edf(filename)
+        self._data = data.get_data()
+        self.sampling_frequency = data.info["sfreq"]
+        self.channels = data.ch_names
+        logging.info(f"Recording contains channels = {self.channels}")
+
+    def select_channels(self) -> None:
+        """
+        Select a subset of the available channels, then the channels are sorted.
+        The list of expected channels is detailed in settings
+        """
+        channels_to_idx = {}
+        for x, y in zip(self.channels, range(len(self.channels))):
+            key = re.sub("^EEG ", "", x).split("-")[0].lower()
+            channels_to_idx[key] = y
+
+        temp_eeg = numpy.zeros([len(self.selected_channels),
+                               self._data.shape[1]])
+        for idx, channel in zip(range(len(self.selected_channels)),
+                                self.selected_channels):
+            new_channel = (self._data[channels_to_idx[channel.lower()], :])
+            temp_eeg[idx, :] = new_channel
+        self._data = temp_eeg
+
+
 class EegSlicer():
 
     def __init__(self, sampling_frequency: int):
@@ -280,3 +326,21 @@ class EegSlicer():
             logging.info(f"Valid slice was found, seizure_duration = {new_seizure_end - new_seizure_start}")
             
             yield metadata, eeg_slice
+
+    def compute_random_slices(self, number_slices: int, eeg_array: numpy.array) -> numpy.array:
+        """
+        Select a set of random slices from an eeg recording.
+        :param number_slices: number of slices
+        :param eeg_array: full eeg recording
+        """
+        for _ in range(number_slices):
+            middle_point = random.randint(0, eeg_array.shape[1])
+            slice_start = middle_point - (self.preictal_min_length * self.sampling_frequency)
+            slice_end = middle_point + (self.postictal_min_lenght * self.sampling_frequency)
+
+            slice_start = slice_start if slice_start > 0 else 0
+            slice_end = slice_end if slice_end < eeg_array.shape[1] else eeg_array.shape[1]
+            eeg_slice = eeg_array[:, slice_start: slice_end]
+
+            logging.info(f"Valid slice was found")            
+            yield eeg_slice

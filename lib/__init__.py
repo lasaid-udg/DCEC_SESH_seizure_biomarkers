@@ -33,4 +33,6 @@ if "chb-mit" in settings:
 if "siena" in settings:
     settings["siena"]["dataset"] = os.environ.get("SIENA_DATASET_HOME")
 if "tusz" in settings:
-    settings["tusz"]["dataset"] = os.environ.get("TUSZ_DATASET_HOME")    
+    settings["tusz"]["dataset"] = os.environ.get("TUSZ_DATASET_HOME")
+if "tuep" in settings:
+    settings["tuep"]["dataset"] = os.environ.get("TUEP_DATASET_HOME")

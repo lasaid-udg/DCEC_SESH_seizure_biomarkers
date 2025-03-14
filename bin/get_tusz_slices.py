@@ -54,6 +54,7 @@ def main():
             processor.remove_drift()
             processor.remove_hfo()
             processor.remove_power_noise()
+            processor.rereference_to_average()
 
             end_of_file = int(processor._data.shape[1] / processor.sampling_frequency)
             seizures["seizures"] = list(seizures["seizures"])

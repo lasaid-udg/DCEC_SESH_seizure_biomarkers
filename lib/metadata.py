@@ -222,6 +222,34 @@ class MetadataTusz():
         return seizure_ranges
 
 
+class MetadataTuep():
+
+    def __init__(self, files: str):
+        """
+        :param files: list of paths to the metadata file
+        """
+        self.recordings = files
+
+    @property
+    def recordings(self) -> dict:
+        return self._recordings
+
+    @recordings.setter
+    def recordings(self, files: list) -> None:
+        """
+        Read and parse a set of metadata files
+        :param file: list of paths to the metadata file
+        """
+        self._recordings = {}
+
+        for file in files:
+            filename = file.split("/")[-1].rstrip(".edf")
+
+            if filename not in self._recordings:
+                self._recordings[filename] = {"full_file": file,
+                                              "seizures": [(0.0, 0.0, "bckg")]}
+
+
 class MetadataListChb():
 
     def __init__(self):
@@ -322,3 +350,39 @@ class MetadataListTusz():
 
         for patient, files in _grouped_files.items():
             self._patient_metadata.update({patient: MetadataTusz(files)})
+
+
+class MetadataListTuep():
+
+    def __init__(self):
+        self.patient_metadata = settings["tuep"]["dataset"]
+
+    def get(self, patient: str, file: str) -> dict:
+        """
+        Return eeg recording files per subject
+        :param patient: patient ID
+        :param file: name of the edf file (without extension)
+        """
+        file = file.split("/")[-1].split(".")[0]
+        patient_files = self._patient_metadata.get(patient)
+        single_metadata = patient_files.recordings.get(file)
+        return single_metadata
+
+    @property
+    def patient_metadata(self) -> dict:
+        return self._patient_metadata
+
+    @patient_metadata.setter
+    def patient_metadata(self, root_dir: str) -> None:
+        """
+        Read and parse all the metadata files
+        :param root_dir: dataset's base directory
+        """
+        _grouped_files = defaultdict(list)
+        self._patient_metadata = {}
+        for x in glob.glob(os.path.join(root_dir, "**/**/**/*.edf")):
+            patient = x.split("/")[-4]
+            _grouped_files[patient].append(x)
+
+        for patient, files in _grouped_files.items():
+            self._patient_metadata.update({patient: MetadataTuep(files)})
