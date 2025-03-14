@@ -1,69 +1,163 @@
 #!/var/tmp/venv-project-1/bin/python
+"""
+Usage:
+    analyze_charts_univariate_features.py (--feature=<feature>)
+"""
 import os
 import sys
-import time
+import pandas
 import logging
 import warnings
+from docopt import docopt
 warnings.filterwarnings("ignore")
 sys.path.append("../")
 from lib import settings
-from lib.analyzers import IntraUnivariateChbAnalyzer, IntraUnivariateSienaAnalyzer, IntraUnivariateTuszAnalyzer
+from lib.stats import StatisticalTests
+from lib.analyzers import IntraUnivariateChbAnalyzer, IntraUnivariateSienaAnalyzer, IntraUnivariateTuszAnalyzer, \
+                          InterUnivariateSienaAnalyzer, InterUnivariateTuszAnalyzer
 
 
+FEATURE = docopt(__doc__)["--feature"]
 OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 
 
 def main():
 
+    stats_gateway = StatisticalTests()
+
+    logging.info("Processing database Siena vs TUEP")
+    test_results = []
+
+    logging.info(f"Processing feature = {FEATURE}")
+    analyzer = InterUnivariateSienaAnalyzer(FEATURE)
+
+    for region in ["frontal", "temporal", "parietal", "occipital"]:
+        groups = analyzer.processed_data_for_kruskal_wallis(region)
+
+        for group in groups:
+            kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(group[1])
+            dunn_p_values = stats_gateway.run_posthoc_dunns(group[1])
+            test_result = {"feature": FEATURE,
+                           "region": region,
+                           "band": group[0],
+                           "kruskal_p_value": kruskal_p_value}
+            test_result.update({key: value for (key, value) in dunn_p_values})
+            test_results.append(test_result)
+
+    output_file = f"kruskal_siena_inter_{FEATURE}.csv"
+    output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
+
+    normalized_stationarity_evaluation = pandas.DataFrame(test_results)
+    normalized_stationarity_evaluation.to_csv(output_file, index=False)
+
+    ########################################################################
+    logging.info("Processing database Tusz vs TUEP")
+    test_results = []
+
+    logging.info(f"Processing feature = {FEATURE}")
+    analyzer = InterUnivariateTuszAnalyzer(FEATURE)
+
+    for region in ["frontal", "temporal", "parietal", "occipital"]:
+        groups = analyzer.processed_data_for_kruskal_wallis(region)
+
+        for group in groups:
+            kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(group[1])
+            dunn_p_values = stats_gateway.run_posthoc_dunns(group[1])
+            test_result = {"feature": FEATURE,
+                           "region": region,
+                           "band": group[0],
+                           "kruskal_p_value": kruskal_p_value}
+            test_result.update({key: value for (key, value) in dunn_p_values})
+            test_results.append(test_result)
+
+    output_file = f"kruskal_tusz_inter_{FEATURE}.csv"
+    output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
+
+    normalized_stationarity_evaluation = pandas.DataFrame(test_results)
+    normalized_stationarity_evaluation.to_csv(output_file, index=False)
+
+    ########################################################################
     logging.info("Processing database CHB-MIT")
+    test_results = []
 
-    for feature in settings["univariate_features"]:
-        logging.info(f"Processing feature = {feature}")
-        analyzer = IntraUnivariateChbAnalyzer(feature)
-        analyzer.hemisfere_bar_chart("left", "unknown")
-        analyzer.hemisfere_dist_chart("left", "unknown")
-        time.sleep(3)
-        analyzer.hemisfere_bar_chart("right", "unknown")
-        analyzer.hemisfere_dist_chart("right", "unknown")
-        time.sleep(3)
+    logging.info(f"Processing feature = {FEATURE}")
+    analyzer = IntraUnivariateChbAnalyzer(FEATURE)
 
+    for region in ["left", "right"]:
+        groups = analyzer.processed_data_for_friedman(region, "unknown")
+
+        for group in groups:
+            friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+            nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
+            test_result = {"feature": FEATURE,
+                            "seizure_type": "unknown",
+                            "region": region,
+                            "band": group[0],
+                            "friedman_p_value": friedman_p_value}
+            test_result.update({key: value for (key, value) in nemenyi_p_values})
+            test_results.append(test_result)
+
+    output_file = f"friedman_chb_intra_{FEATURE}.csv"
+    output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
+
+    normalized_stationarity_evaluation = pandas.DataFrame(test_results)
+    normalized_stationarity_evaluation.to_csv(output_file, index=False)
+
+    ########################################################################
     logging.info("Processing database Siena")
+    test_results = []
 
-    for feature in settings["univariate_features"]:
-        logging.info(f"Processing feature = {feature}")
-        analyzer = IntraUnivariateSienaAnalyzer(feature)
-        for seizure_type in settings["siena"]["valid_seizure_types"]:
-            analyzer.region_bar_chart("frontal", seizure_type)
-            analyzer.region_dist_chart("frontal", seizure_type)
-            time.sleep(3)
-            analyzer.region_bar_chart("temporal", seizure_type)
-            analyzer.region_dist_chart("temporal", seizure_type)
-            time.sleep(3)
-            analyzer.region_bar_chart("parietal", seizure_type)
-            analyzer.region_dist_chart("parietal", seizure_type)
-            time.sleep(3)
-            analyzer.region_bar_chart("occipital", seizure_type)
-            analyzer.region_dist_chart("occipital", seizure_type)
-            time.sleep(3)
+    logging.info(f"Processing feature = {FEATURE}")
+    analyzer = IntraUnivariateSienaAnalyzer(FEATURE)
 
-    logging.info("Processing database TUSZ")
+    for seizure_type in settings["siena"]["valid_seizure_types"]:
+        for region in ["frontal", "temporal", "parietal", "occipital"]:
+            groups = analyzer.processed_data_for_friedman(region, seizure_type)
 
-    for feature in settings["univariate_features"]:
-        logging.info(f"Processing feature = {feature}")
-        analyzer = IntraUnivariateTuszAnalyzer(feature)
-        for seizure_type in settings["tusz"]["valid_seizure_types"]:
-            analyzer.region_bar_chart("frontal", seizure_type)
-            analyzer.region_dist_chart("frontal", seizure_type)
-            time.sleep(3)
-            analyzer.region_bar_chart("temporal", seizure_type)
-            analyzer.region_dist_chart("temporal", seizure_type)
-            time.sleep(3)
-            analyzer.region_bar_chart("parietal", seizure_type)
-            analyzer.region_dist_chart("parietal", seizure_type)
-            time.sleep(3)
-            analyzer.region_bar_chart("occipital", seizure_type)
-            analyzer.region_dist_chart("occipital", seizure_type)
-            time.sleep(3)
+            for group in groups:
+                friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+                nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
+                test_result = {"feature": FEATURE,
+                               "seizure_type": seizure_type,
+                               "region": region,
+                               "band": group[0],
+                               "friedman_p_value": friedman_p_value}
+                test_result.update({key: value for (key, value) in nemenyi_p_values})
+                test_results.append(test_result)
+
+    output_file = f"friedman_siena_intra_{FEATURE}.csv"
+    output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
+
+    normalized_stationarity_evaluation = pandas.DataFrame(test_results)
+    normalized_stationarity_evaluation.to_csv(output_file, index=False)
+
+    ########################################################################
+    logging.info("Processing database Tusz")
+    test_results = []
+
+    logging.info(f"Processing feature = {FEATURE}")
+    analyzer = IntraUnivariateTuszAnalyzer(FEATURE)
+
+    for seizure_type in settings["tusz"]["valid_seizure_types"]:
+        for region in ["frontal", "temporal", "parietal", "occipital"]:
+            groups = analyzer.processed_data_for_friedman(region, seizure_type)
+
+            for group in groups:
+                friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+                nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
+                test_result = {"feature": FEATURE,
+                               "seizure_type": seizure_type,
+                               "region": region,
+                               "band": group[0],
+                               "friedman_p_value": friedman_p_value}
+                test_result.update({key: value for (key, value) in nemenyi_p_values})
+                test_results.append(test_result)
+
+    output_file = f"friedman_tusz_intra_{FEATURE}.csv"
+    output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
+
+    normalized_stationarity_evaluation = pandas.DataFrame(test_results)
+    normalized_stationarity_evaluation.to_csv(output_file, index=False)
 
 
 if __name__ == "__main__":
