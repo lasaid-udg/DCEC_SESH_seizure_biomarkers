@@ -10,12 +10,12 @@ ictal_min_lenght: 12
 postictal_min_lenght: 60
 
 ####################################
-window_length: 5            # Seconds [5sec, 2sec, 1sec]
+window_length: 1            # Seconds [5sec, 2sec, 1sec]
 tolerance_length: 1         # Seconds
 preictal_windows_start:
-  - 0
-  - 10
   - 30
+  - 10
+  - 0
 postictal_windows_start:
   - 0
   - 10
@@ -29,7 +29,10 @@ intra_windows_categories:
   - [postictal, 30, 3, "31s after"]
   - [postictal, 10, 2, "11s after"]
   - [postictal, 0, 1, "1s after"]
-  
+inter_windows_categories:
+  - ["preictal"]
+  - ["ictal"]
+  - ["healthy"]
 
 ####################################
 band_specifications:
@@ -38,6 +41,48 @@ band_specifications:
   - {"cut_frequency": [8, 12],  "order": 4}      # Alpha band
   - {"cut_frequency": [12, 30], "order": 4}      # Beta band
 
+
+####################################
+
+electrode_positions:
+    Fp1: [-0.247, 0.760]
+    Fp2: [0.247, 0.760]
+    F3: [-0.35, 0.41]
+    F4: [0.35, 0.41]
+    F7: [-0.647, 0.470]
+    F8: [0.647, 0.470]
+    O1: [-0.247, -0.760]
+    O2: [0.247, -0.760]
+    C3: [-0.4, 0]
+    C4: [0.4, 0]
+    T3: [-0.8, 0]
+    T4: [0.8, 0]
+    T5: [-0.647, -0.45]
+    T6: [0.647, -0.45]
+    P3: [-0.35, -0.42]
+    P4: [0.35, -0.42]
+    Fz: [0, 0.4]
+    Cz: [0, 0]
+    Pz: [0, -0.4]
+
+bipolar_electrode_positions:
+    FP1-F7: [-0.48, 0.61]
+    F7-T7: [-0.76, 0.23]
+    T7-P7: [-0.76, -0.21]
+    P7-O1: [-0.48, -0.60]
+    FP1-F3: [-0.22, 0.70]  
+    F3-C3: [-0.37, 0.20]
+    C3-P3: [-0.37, -0.21]
+    P3-O1: [-0.22, -0.70]
+    FP2-F8: [0.48, 0.61]
+    F8-T8: [0.76, 0.23]
+    T8-P8: [0.76, -0.21]
+    P8-O2: [0.44, -0.60]
+    FP2-F4: [0.22, 0.70]  
+    F4-C4: [0.37, 0.23]
+    C4-P4: [0.37, -0.21]
+    P4-O2: [0.22, -0.70]
+  
 ####################################
 chb-mit:
   epoch_size: 2             # Seconds  
@@ -88,8 +133,7 @@ chb-mit:
     - P8-O2
 
 
-siena:
-  #epoch_size: 2           # 2 seconds  
+siena: 
   f_samp: 512
   gain: 1
   units: 0.000001  # Microvolts  
@@ -163,7 +207,6 @@ siena:
       - O2
 
 tusz:
-  #epoch_size: 2           # 2 seconds  
   f_samp: 512
   gain: 1
   units: 0.000001  # Microvolts
@@ -225,5 +268,63 @@ tusz:
       - O1
       - O2
 
+tuep:
+  f_samp: 512
+  gain: 1
+  units: 0.000001  # Microvolts
+  ekg_units:
+  power_noise_frequency: 60 #Hertz
+
+  channels:
+    - Fp1
+    - Fp2
+    - F3
+    - F4
+    - F7
+    - F8
+    - T3
+    - T4
+    - T5
+    - T6
+    - O1
+    - O2
+    - C3
+    - C4
+    - P3
+    - P4
+    - Fz
+    - Cz
+    - Pz
+  
+  univariate_channels_groups:
+    frontal:
+      - Fp1
+      - Fp2
+      - F3
+      - F4
+      - F7
+      - F8
+      - Fz
+    temporal:
+      - T3
+      - T4
+      - T5
+      - T6
+    parietal:
+      - P3
+      - P4
+      - Pz
+      - C3
+      - C4
+      - Cz
+    occipital:
+      - O1
+      - O2
+
+####################################
+
 univariate_features:
-  - kurtosis
+  #- kurtosis
+  #- hjorth_mobility
+  #- hjorth_complexity
+  - katz_fractal_dimension
