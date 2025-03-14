@@ -1,10 +1,12 @@
 docopt
 jupyter
 mne
+mne-features
 pandasql
 python-dotenv
 PyYAML
 flake8
 scikit-learn
+scikit-posthocs
 scipy
 statsmodels
