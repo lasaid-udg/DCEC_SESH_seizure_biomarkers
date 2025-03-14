@@ -34,7 +34,7 @@ def main():
             delta, theta, alpha, beta = BandEstimator.get_eeg_bands(eeg_array,
                                                                     metadata["sampling_frequency"])
             
-            for band_name, band in zip(["delta", "theta", "alpha", "beta"], [delta, theta, alpha, beta]):
+            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"], [delta, theta, alpha, beta, eeg_array]):
                 logging.info(f"Processing band = {band_name}")
 
                 for channel_number, channel_name in enumerate(metadata["channels"]): 
