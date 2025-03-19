@@ -5,14 +5,28 @@ drift_butter_order: 4
 hfo_butter_order: 6 
 
 ####################################
-preictal_min_length: 60
-ictal_min_lenght: 12
-postictal_min_lenght: 60
+eog_denoiser_segment_lenght: 40
+eog_denoiser_sources_tol:         # Min and max number of sources to remove       
+  - 0
+  - 2
+emg_denoiser_segment_lenght: 10
+emg_denoiser_emg_freq: 20         # Frequency aproximately separating the EEG and EMG bands
+emg_denoiser_ratio: 5             # Ratio of average power in EEG band to average power in the EMG band below which a
+                                  # component will be considered to be EMG-related.
+eog_denoiser_sources_tol:         # # Min and max number of sources to remove     
+  - 0
+  - 2
+
+####################################
+preictal_min_length: 120
+ictal_min_lenght: 10
+postictal_min_lenght: 120
 
 ####################################
 window_length: 1            # Seconds [5sec, 2sec, 1sec]
 tolerance_length: 1         # Seconds
 preictal_windows_start:
+  - 60
   - 30
   - 10
   - 0
@@ -20,12 +34,16 @@ postictal_windows_start:
   - 0
   - 10
   - 30
+  - 60
 intra_windows_categories:
+  - [preictal, 60, 1, "61s before"]
   - [preictal, 30, 1, "31s before"]
   - [preictal, 10, 2, "11s before"]
   - [preictal, 0, 3, "1s before"]
   - [ictal, 1, 1, "Start of seizure"]
+  - [ictal, 2, 1, "Middle point"]
   - [ictal, -1, 2,"End of seizure"]
+  - [postictal, 60, 1, "61s after"]
   - [postictal, 30, 3, "31s after"]
   - [postictal, 10, 2, "11s after"]
   - [postictal, 0, 1, "1s after"]
@@ -141,24 +159,25 @@ siena:
   power_noise_frequency: 50 #Hertz
 
   valid_seizure_types:
-    - IAS-T-Right
-    - IAS-T-Left
+    - IAS
+    # - FBTC  # Small amount of events - 9
+    # - WIAS  # Small amount of events - 3
 
   seizure_types:
-    PN00: IAS-T-Right
-    PN01: IAS-T-Left
-    PN03: IAS-T-Right
-    PN05: IAS-T-Left
-    PN06: IAS-T-Left
-    PN07: IAS-T-Left
-    PN09: IAS-T-Left
-    PN10: FBTC-F-Bilateral
-    PN11: IAS-T-Right
-    PN12: IAS-T-Left
-    PN13: IAS-T-Left
-    PN14: WIAS-T-Left
-    PN16: IAS-T-Left
-    PN17: IAS-T-Right
+    PN00: IAS
+    PN01: IAS
+    PN03: IAS
+    PN05: IAS
+    PN06: IAS
+    PN07: IAS
+    PN09: IAS
+    PN10: FBTC
+    PN11: IAS
+    PN12: IAS
+    PN13: IAS
+    PN14: WIAS
+    PN16: IAS
+    PN17: IAS
 
   channels:
     - Fp1
@@ -214,12 +233,12 @@ tusz:
   power_noise_frequency: 60 #Hertz
 
   valid_seizure_types:
-    - absz
+    #- absz   # Small amount of events - 6
     - cpsz
     - fnsz
     - gnsz
-    - spsz
-    - tcsz
+    #- spsz   # Small amount of events - 1
+    #- tcsz   # Small amount of events - 2
     - tnsz
 
   channels:
@@ -324,7 +343,10 @@ tuep:
 ####################################
 
 univariate_features:
-  #- kurtosis
-  #- hjorth_mobility
-  #- hjorth_complexity
+  - kurtosis
+  - skew
+  - hjorth_mobility
+  - hjorth_complexity
   - katz_fractal_dimension
+  - approximate_entropy
+  - power_spectral_density
