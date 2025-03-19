@@ -1,7 +1,7 @@
 #!/var/tmp/venv-project-1/bin/python
 """
 Usage:
-    analyze_charts_univariate_features.py (--feature=<feature>)
+    analyze_stats_univariate_features.py (--feature=<feature>)
 """
 import os
 import sys
@@ -35,7 +35,11 @@ def main():
         groups = analyzer.processed_data_for_kruskal_wallis(region)
 
         for group in groups:
-            kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(group[1])
+            try:
+                kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(group[1])
+            except ValueError as exc:
+                logging.error(f"Error in Kruskal-Wallis test = {exc}")
+                continue
             dunn_p_values = stats_gateway.run_posthoc_dunns(group[1])
             test_result = {"feature": FEATURE,
                            "region": region,
@@ -48,6 +52,7 @@ def main():
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
 
     normalized_stationarity_evaluation = pandas.DataFrame(test_results)
+    normalized_stationarity_evaluation
     normalized_stationarity_evaluation.to_csv(output_file, index=False)
 
     ########################################################################
@@ -61,7 +66,11 @@ def main():
         groups = analyzer.processed_data_for_kruskal_wallis(region)
 
         for group in groups:
-            kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(group[1])
+            try:
+                kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(group[1])
+            except ValueError as exc:
+                logging.error(f"Error in Kruskal-Wallis test = {exc}")
+                continue
             dunn_p_values = stats_gateway.run_posthoc_dunns(group[1])
             test_result = {"feature": FEATURE,
                            "region": region,
@@ -87,10 +96,15 @@ def main():
         groups = analyzer.processed_data_for_friedman(region, "unknown")
 
         for group in groups:
-            friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+            try:
+                friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+            except ValueError as exc:
+                logging.error(f"Error in Friedmam test = {exc}")
+                continue
             nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
             test_result = {"feature": FEATURE,
                             "seizure_type": "unknown",
+                            "group_size": len(group[1][0]),
                             "region": region,
                             "band": group[0],
                             "friedman_p_value": friedman_p_value}
@@ -115,10 +129,15 @@ def main():
             groups = analyzer.processed_data_for_friedman(region, seizure_type)
 
             for group in groups:
-                friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+                try:
+                    friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+                except ValueError as exc:
+                    logging.error(f"Error in Friedmam test = {exc}")
+                    continue
                 nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
                 test_result = {"feature": FEATURE,
                                "seizure_type": seizure_type,
+                               "group_size": len(group[1][0]),
                                "region": region,
                                "band": group[0],
                                "friedman_p_value": friedman_p_value}
@@ -143,10 +162,15 @@ def main():
             groups = analyzer.processed_data_for_friedman(region, seizure_type)
 
             for group in groups:
-                friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+                try:
+                    friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+                except ValueError as exc:
+                    logging.error(f"Error in Friedmam test = {exc}")
+                    continue
                 nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
                 test_result = {"feature": FEATURE,
                                "seizure_type": seizure_type,
+                               "group_size": len(group[1][0]),
                                "region": region,
                                "band": group[0],
                                "friedman_p_value": friedman_p_value}

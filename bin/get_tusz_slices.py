@@ -10,6 +10,7 @@ sys.path.append("../")
 from lib.metadata import MetadataListTusz
 from lib.signals import EegProcessorTusz, EegSlicer
 from lib.filters import FilterBank
+from lib.bss import EogDenoiser, EmgDenoiser
 
 
 OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
@@ -54,7 +55,6 @@ def main():
             processor.remove_drift()
             processor.remove_hfo()
             processor.remove_power_noise()
-            processor.rereference_to_average()
 
             end_of_file = int(processor._data.shape[1] / processor.sampling_frequency)
             seizures["seizures"] = list(seizures["seizures"])

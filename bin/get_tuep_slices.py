@@ -49,7 +49,6 @@ def main():
             processor.remove_drift()
             processor.remove_hfo()
             processor.remove_power_noise()
-            processor.rereference_to_average()
 
             slicer = EegSlicer(processor.sampling_frequency)
             for slice_eeg in slicer.compute_random_slices(4, processor._data):

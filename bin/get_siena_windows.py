@@ -9,6 +9,7 @@ warnings.filterwarnings("ignore")
 sys.path.append("../")
 from lib.slices import WindowSelector, EegSlicesSiena
 from lib.signals import EegProcessorBaseClass
+from lib.bss import EogDenoiser, EmgDenoiser
 
 
 OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
@@ -23,6 +24,18 @@ def main():
         for seizure_number in range(len(patient_metadata)):
             logging.info(f"Processing eeg slice")
             seizure_metadata, eeg_slice = slices_siena.get(patient, seizure_number)
+       
+            ###########################################################
+            eog_denoiser = EogDenoiser(seizure_metadata["sampling_frequency"])
+            _, eeg_slice = eog_denoiser.apply_by_segments(eeg_slice)
+
+            emg_denoiser = EmgDenoiser(seizure_metadata["sampling_frequency"])
+            _, eeg_slice = emg_denoiser.apply_by_segments(eeg_slice)
+
+            ###########################################################
+            eeg_slice = EegProcessorBaseClass.rereference_to_average(numpy.abs(eeg_slice))
+
+            ###########################################################
             eeg_slice = EegProcessorBaseClass.standardize(eeg_slice)
 
             selector = WindowSelector(seizure_metadata["sampling_frequency"])

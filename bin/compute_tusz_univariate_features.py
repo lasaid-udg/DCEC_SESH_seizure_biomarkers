@@ -31,23 +31,40 @@ def main():
         counter += 1
         for window_number, seizure_stage in metadata["windows"].items():
             eeg_array = windows[int(window_number), :, :]
-            delta, theta, alpha, beta = BandEstimator.get_eeg_bands(eeg_array,
-                                                                    metadata["sampling_frequency"])
-            
-            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"], [delta, theta, alpha, beta, eeg_array]):
-                logging.info(f"Processing band = {band_name}")
 
+            if FEATURE != "power_spectral_density":
+                delta, theta, alpha, beta = BandEstimator.get_eeg_bands(eeg_array,
+                                                                        metadata["sampling_frequency"])
+                
+                for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"], [delta, theta, alpha, beta, eeg_array]):
+                    logging.info(f"Processing band = {band_name}")
+
+                    for channel_number, channel_name in enumerate(metadata["channels"]): 
+                        feature_value = feature_estimator(FEATURE, band[channel_number, :])
+                        feature_list.append({"patient": metadata["patient"],
+                                            "band": band_name,
+                                            "seizure_type": metadata["seizure_type"],
+                                            "channel": channel_name,
+                                            "seizure_stage": seizure_stage[0],
+                                            "time_point": seizure_stage[1],
+                                            "feature": FEATURE,
+                                            "seizure_number": counter,
+                                            "value": feature_value})
+
+            else:
                 for channel_number, channel_name in enumerate(metadata["channels"]): 
-                    feature_value = feature_estimator(FEATURE, band[channel_number, :])
-                    feature_list.append({"patient": metadata["patient"],
-                                        "band": band_name,
-                                        "seizure_type": metadata["seizure_type"],
-                                        "channel": channel_name,
-                                        "seizure_stage": seizure_stage[0],
-                                        "time_point": seizure_stage[1],
-                                        "feature": FEATURE,
-                                        "seizure_number": counter,
-                                        "value": feature_value})
+                    logging.info(f"Processing instance")
+                    densities = feature_estimator(FEATURE, eeg_array[channel_number, :], metadata["sampling_frequency"])
+                    for band_name, density in zip(["delta", "theta", "alpha", "beta", "all"], densities):
+                        feature_list.append({"patient": metadata["patient"],
+                                             "band": band_name,
+                                             "seizure_type": metadata["seizure_type"],
+                                             "channel": channel_name,
+                                             "seizure_stage": seizure_stage[0],
+                                             "time_point": seizure_stage[1],
+                                             "feature": FEATURE,
+                                             "seizure_number": counter,
+                                             "value": density})
 
     feature_df = pandas.DataFrame(feature_list)
     output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "features", "tusz", f"{FEATURE}.csv")
