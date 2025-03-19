@@ -32,7 +32,7 @@ class EegSlices:
             if single_metadata["patient"] not in self._metadata:
                 self._metadata[single_metadata["patient"]] = []
             self._metadata[single_metadata["patient"]].append(single_metadata)
-    
+
     def get(self, patient: str, seizure_number: str) -> Tuple[dict, numpy.array]:
         """
         Return metadata and eeg slice for a single patient
@@ -43,6 +43,18 @@ class EegSlices:
         metadata["channels"] = settings[self.DATASET]["channels"]
         eeg_slice = numpy.load(metadata["slice_file"])
         return metadata, eeg_slice
+
+    def summarize(self) -> None:
+        """
+        Print the count of events per seizure type 
+        """
+        summary = {}
+        for patient_metadata in self.metadata.values():
+            for metadata in patient_metadata:
+                if metadata["seizure_type"] not in summary:
+                    summary[metadata["seizure_type"]] = 0
+                summary[metadata["seizure_type"]] += 1
+        print(json.dumps(summary, indent=4))
 
 
 class EegSlicesChb(EegSlices):
@@ -102,14 +114,21 @@ class WindowSelector:
         window_end = window_start + self.window_lenght
         window_1 = eeg_array[:, int(window_start): int(window_end)]
         metadata["windows"][counter] = ("ictal", 1)
+    
+        middle_point = (metadata["seizure_end"] - metadata["seizure_start"]) / 2
+        
+        window_start = ((metadata["seizure_start"] + middle_point) * self.sampling_frequency)
+        window_end = window_start + self.window_lenght
+        window_2 = eeg_array[:, int(window_start): int(window_end)]
+        metadata["windows"][counter + 1] = ("ictal", 2)
 
         seizure_end = metadata["seizure_end"] * self.sampling_frequency
         window_end = (seizure_end - self.tolerance_lenght)
         window_start = window_end - self.window_lenght
-        window_2 = eeg_array[:, int(window_start): int(window_end)]
-        metadata["windows"][counter + 1] = ("ictal", -1)
+        window_3 = eeg_array[:, int(window_start): int(window_end)]
+        metadata["windows"][counter + 2] = ("ictal", -1)
 
-        return [window_1, window_2]
+        return [window_1, window_2, window_3]
 
 
     def get_postictal_windows(self, metadata: dict, eeg_array: numpy.array) -> list:

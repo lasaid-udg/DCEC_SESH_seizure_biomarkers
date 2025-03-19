@@ -82,12 +82,15 @@ class EegProcessorBaseClass():
         self._data = self.filter_bank.apply_filter(self._data, "notch",
                                                    power_frequency=self.power_noise_frequency)
 
-    def rereference_to_average(self) -> None:
+    @classmethod
+    def rereference_to_average(cls, eeg_array: numpy.array) -> numpy.array:
         """
         Set the reference to average reference
+        :param eeg_array: matrix with the eeg recording [channels x samples]
         """
-        reference_data = self._data.mean(0, keepdims=True)
-        self._data -= reference_data
+        reference_data = eeg_array.mean(0, keepdims=True)
+        eeg_array -= reference_data
+        return eeg_array
     
     @classmethod
     def standardize(cls, eeg_array: numpy.array) -> numpy.array:

@@ -2,6 +2,7 @@ import numpy
 import logging
 import scipy.linalg
 from typing import Tuple
+from . import settings
 
 
 class IWasobi():
@@ -406,25 +407,32 @@ class CanonicalCorrelation():
 
 class EogDenoiser:
 
-    def __init__(self):
-        self.fractal_dimensions = []
-        self.sources = None
+    def __init__(self, sampling_frequency: int):
+        self.sampling_frequency = sampling_frequency
+        self.segment_lenght = settings["eog_denoiser_segment_lenght"]
+        self.sources_tol = settings["eog_denoiser_sources_tol"]
 
     def __str__(self):
         for idx, dimension in enumerate(self.fractal_dimensions):
             print(f"Source = {idx + 1}, fd = {dimension}")
         return "Done!"
 
+    def fit_iwasobi(self, segment: list):
+        self.iwasobi = IWasobi()
+        sources = self.iwasobi.fit_transform(segment)
+        return sources
+
     def fit_fractal_dimensions(self, sources: numpy.array) -> None:
         """
         Estimate fractal dimension for each source
         :param sources: matrix with the eeg sources [sources x samples]
         """
+        fractal_dimensions = []
         for idx in range(sources.shape[0]):
             fractal_dimemsion = self.sevcik_fractal_dimension(sources[idx, :])
-            self.fractal_dimensions.append(fractal_dimemsion)
-        self.sources = sources
-        self.fractal_dimensions = numpy.array(self.fractal_dimensions)
+            fractal_dimensions.append(fractal_dimemsion)
+        sources = sources
+        self.fractal_dimensions = numpy.array(fractal_dimensions)
 
     def sevcik_fractal_dimension(self, source: numpy.array) -> float:
         """
@@ -440,63 +448,89 @@ class EogDenoiser:
         dimension = 1 + numpy.log(waveform_lenght / numpy.log(2 * (x_axis_span - 1)))
         return dimension
 
-    def remove_low_dimension_sources(self, sources_range: list) -> numpy.array:
+    def remove_low_dimension_sources(self, sources: numpy.array) -> numpy.array:
         """
         Remove EOG components according to their fractal dimensions
-        :param sources_range: range of components that can be removed
+        :param sources: matrix with the eeg sources [sources x samples]
         """
         sorted_indices = numpy.argsort(self.fractal_dimensions)
         self.fractal_dimensions = self.fractal_dimensions[sorted_indices]
         fractal_distances = self.fractal_dimensions[1:] - self.fractal_dimensions[0:-1]
+        limit_index = 0
 
-        for idx in range(len(fractal_distances)):
-            if numpy.mean(numpy.cumsum(fractal_distances[idx + 1:])) < numpy.mean(numpy.cumsum(fractal_distances[0:idx])):
+        for idx in range(1, len(fractal_distances) - 1):
+            if fractal_distances[idx] < fractal_distances[idx - 1]:
+            #if numpy.mean(numpy.cumsum(fractal_distances[idx + 1:])) < numpy.mean(numpy.cumsum(fractal_distances[0:idx])):
                 limit_index = idx
                 break
-        else:
-            limit_index = len(fractal_distances) -1
         
-        if limit_index < sources_range[0]:
-            limit_index = sources_range[0]
-        elif limit_index > sources_range[1]:
-            limit_index = sources_range[1]
+        if limit_index < self.sources_tol[0]:
+            limit_index = self.sources_tol[0]
+        elif limit_index > self.sources_tol[1]:
+            limit_index = self.sources_tol[1]
         
-        logging.info(f"Number of sources to be removed = {limit_index}")
-        
+        logging.info(f"Number of sources to be removed = {limit_index}, indices: {sorted_indices[:limit_index]}")
         for idx in sorted_indices[:limit_index]:
-            self.sources[idx, :] = 0
+            sources[idx, :] = 0
+        return sources
+    
+    def apply_by_segments(self, eeg_array: numpy.array) -> numpy.array:
+        """
+        It removes the EOG sources by splitting the eeg recording
+        into smaller windows. Each window is processed independently.
+        :param eeg_array: [channels x samples]
+        """
+        segments = []
+        segment_lenght = self.segment_lenght * self.sampling_frequency
+        next_idx = segment_lenght
+
+        for previous_idx in range(0, eeg_array.shape[1], segment_lenght):
+            segment = eeg_array[:, previous_idx : next_idx]
+            segments.append(segment)
+            next_idx += segment_lenght
         
-        return self.sources
+        clean_eegs = []
+        aggregated_sources = []
+        for segment in segments:
+            sources = self.fit_iwasobi(segment)
+            aggregated_sources.append(numpy.copy(sources))
+            self.fit_fractal_dimensions(sources)
+            clean_sources = self.remove_low_dimension_sources(sources)
+            clean_eeg = self.iwasobi.inverse_transform(clean_sources)
+            clean_eegs.append(clean_eeg)
+        
+        return numpy.concat(aggregated_sources, axis=1), numpy.concat(clean_eegs, axis=1)
 
 
 class EmgDenoiser:
 
-    def __init__(self, frequency_emg: int=15, sampling_frequency: int=None,
-                 ratio: int=10, ):
+    def __init__(self, sampling_frequency: int=None ):
         """
-        :param frequency_emg: frequency aproximately separating the EEG and EMG bands
         :param sampling_frequency: sampling_frequency [Hz]
-        :param ratio: ratio of average power (per unit of frequency) in EEG
-                      band to average power in the EMG band below which a
-                      component will be considered to be EMG-related.
         """
-        self.psd_ratio = []
         self.sources = None
-        self.frequency_emg = frequency_emg
+        self.segment_lenght = settings["emg_denoiser_segment_lenght"]
+        self.frequency_emg = settings["emg_denoiser_emg_freq"]
+        self.sources_tol = settings["eog_denoiser_sources_tol"]
+        self.ratio = settings["emg_denoiser_ratio"]
         self.sampling_frequency = sampling_frequency
-        self.ratio = ratio
 
     def __str__(self):
         for idx, dimension in enumerate(self.psd_ratio):
             print(f"Source = {idx + 1}, fd = {dimension}")
         return "Done!"
 
+    def fit_canonical_correlation(self, segment: list):
+        self.ccanalysis = CanonicalCorrelation()
+        sources = self.ccanalysis.fit_transform(segment)
+        return sources
+
     def fit_psd_ratio(self, sources: numpy.array) -> None:
         """
         Compute the PSD ratio between typical eeg and emg bands
         :param source: 1d-source
         """
-        self.sources = sources
+        self.psd_ratio = []
         _, samples = tuple(sources.shape)
         segment_length = min([2*self.sampling_frequency, int(samples/2)])
         nfft_length = 2 ** numpy.ceil(numpy.log2(min([2*self.sampling_frequency, int(samples/2)])))
@@ -517,10 +551,10 @@ class EmgDenoiser:
         
         self.psd_ratio = numpy.array(self.psd_ratio)
 
-    def remove_low_ratio_sources(self, sources_range: list) -> numpy.array:
+    def remove_low_ratio_sources(self, sources: list) -> numpy.array:
         """
         Remove EMG components according to their PSD ratio
-        :param sources_range: range of components that can be removed
+        :param sources: matrix with the eeg sources [sources x samples]
         """
         sorted_indices = numpy.argsort(self.psd_ratio)
         self.psd_ratio = self.psd_ratio[sorted_indices]
@@ -529,17 +563,40 @@ class EmgDenoiser:
         for i in self.psd_ratio:
             if i > self.ratio:
                 break
-            limit_index += 1
 
-        if limit_index < sources_range[0]:
-            limit_index = sources_range[0]
-        elif limit_index > sources_range[1]:
-            limit_index = sources_range[1]
+        if limit_index < self.sources_tol[0]:
+            limit_index = self.sources_tol[0]
+        elif limit_index > self.sources_tol[1]:
+            limit_index = self.sources_tol[1]
         
         logging.info(f"Number of sources to be removed = {limit_index}")
-        
-
         for idx in sorted_indices[:limit_index]:
-            self.sources[idx, :] = 0
+            sources[idx, :] = 0
+        return sources
+
+    def apply_by_segments(self, eeg_array: numpy.array) -> Tuple[numpy.array, numpy.array]:
+        """
+        It removes the EMG sources by splitting the eeg recording
+        into smaller windows. Each window is processed independently.
+        :param eeg_array: [channels x samples]
+        """
+        segments = []
+        segment_lenght = self.segment_lenght * self.sampling_frequency
+        next_idx = segment_lenght
+
+        for previous_idx in range(0, eeg_array.shape[1], segment_lenght):
+            segment = eeg_array[:, previous_idx : next_idx]
+            segments.append(segment)
+            next_idx += segment_lenght
         
-        return self.sources
+        clean_eegs = []
+        aggregated_sources = []
+        for segment in segments:
+            sources = self.fit_canonical_correlation(segment)
+            self.fit_psd_ratio(sources)
+            clean_sources = self.remove_low_ratio_sources(sources)
+            clean_eeg = self.ccanalysis.inverse_transform(clean_sources)
+            clean_eegs.append(clean_eeg)
+            aggregated_sources.append(sources)
+        
+        return numpy.concat(aggregated_sources, axis=1), numpy.concat(clean_eegs, axis=1)

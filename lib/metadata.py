@@ -1,6 +1,7 @@
 import os
 import re
 import glob
+import json
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Tuple
@@ -281,6 +282,20 @@ class MetadataListChb():
         for x in glob.glob(os.path.join(root_dir, "**/*-summary.txt")):
             patient = x.split("/")[-1].split("-")[0]
             self._patient_metadata.update({patient: MetadataChb(x)})
+    
+    def summarize(self) -> None:
+        """
+        Print the count of events per seizure type 
+        """
+        summary = {}
+        for metadata in self.patient_metadata.values():
+            for event_set in metadata.seizure_ranges.values():
+                events = list(event_set["seizures"])
+                for event in events[1:]:
+                    if event[-1] not in summary:
+                        summary[event[-1]] = 0
+                    summary[event[-1]] += 1
+        print(json.dumps(summary, indent=4))
 
 
 class MetadataListSiena():
@@ -314,6 +329,20 @@ class MetadataListSiena():
         for x in glob.glob(os.path.join(root_dir, "**/*.txt")):
             patient = x.split("/")[-1].split("-")[-1].rstrip(".txt")
             self._patient_metadata.update({patient: MetadataSiena(x)})
+
+    def summarize(self) -> None:
+        """
+        Print the count of events per seizure type 
+        """
+        summary = {}
+        for metadata in self.patient_metadata.values():
+            for event_set in metadata.seizure_ranges.values():
+                events = list(event_set["seizures"])
+                for event in events[1:]:
+                    if event[-1] not in summary:
+                        summary[event[-1]] = 0
+                    summary[event[-1]] += 1
+        print(json.dumps(summary, indent=4))
 
 
 class MetadataListTusz():
@@ -350,6 +379,21 @@ class MetadataListTusz():
 
         for patient, files in _grouped_files.items():
             self._patient_metadata.update({patient: MetadataTusz(files)})
+
+    def summarize(self) -> None:
+        """
+        Print the count of events per seizure type 
+        """
+        summary = {}
+        for metadata in self.patient_metadata.values():
+            for event_set in metadata.seizure_ranges.values():
+                events = list(event_set["seizures"])
+                for event in events[1:]:
+                    if event[-1] not in summary:
+                        summary[event[-1]] = 0
+                    summary[event[-1]] += 1
+        print(json.dumps(summary, indent=4))
+
 
 
 class MetadataListTuep():

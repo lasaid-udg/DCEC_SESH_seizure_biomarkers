@@ -240,7 +240,6 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     ax.axes.get_xaxis().set_ticks([])
     ax.yaxis.set_tick_params(labelsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
@@ -250,7 +249,6 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, :])
@@ -391,6 +389,7 @@ def plot_univariate_intra_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     #########################################################
     ax = fig.add_subplot(grid_specs[2, :])
     seaborn.kdeplot(all, x="value", hue="Time point", ax=ax, palette="pastel")
+    seaborn.move_legend(ax, "upper right", ncol=2)
     ax.set_ylabel("Density", fontsize=8)
     ax.set_xlabel("Feature value \n\n e) Original", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
@@ -462,7 +461,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, :])
-    seaborn.violinplot(beta, x="value", hue="Group", ax=ax, palette="pastel")
+    seaborn.violinplot(all, x="value", hue="Group", ax=ax, palette="pastel")
     ax.set_xlabel("Feature value \n\n d) Original", fontsize=8)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
@@ -477,100 +476,12 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
                     transparent=False, facecolor='white')
     plt.show()
 
-
-def plot_topoplot_features_bands(delta: np.array, theta: np.array,
-                                 alpha: np.array, beta: np.array,
-                                 all: np.array,
-                                 output_file: str=None, is_monopolar: bool=True):
-    """
-    Plot the topographic map per band
-    :param delta: 
-    :param theta: 
-    :param alpha: 
-    :param beta:
-    :param all:
-    :param output_file: if specified the figure will be saved
-    """
-    if is_monopolar:
-        electrode_positions = settings["electrode_positions"]
-        direction = "horizontal"
-    else:
-        electrode_positions = settings["bipolar_electrode_positions"]
-        direction = "vertical"
-
-    grid_specs = GridSpec(2, 3, wspace=0.20, hspace=0.10)
-    fig = plt.figure(figsize=(9, 6))
-    xi, yi = np.mgrid[-1:1:100j, -1:1:100j]
-
-    def single_topomap(ax_object, data_array: np.array, min_color: int, max_color: int):
-        ax_object.axis((-1.2, 1.2, -1.2, 1.2))
-        circle = Circle([0, 0], radius=1, fill=False)
-        ax_object.add_patch(circle)
-        
-        for electrode, coordinate in electrode_positions.items():
-            circle = Circle(coordinate, radius=0.04, fill=True, facecolor=(1, 1, 1)) 
-            ax_object.add_patch(circle)
-            ax_object.text(coordinate[0], coordinate[1], electrode,
-                           verticalalignment='center',
-                           horizontalalignment='center',
-                           rotation=direction,
-                           size=8)
-        points = []
-        for channel in data_array.channel.tolist():
-            point = [x*1.2 for x in electrode_positions[channel]]
-            points.append(point)
-
-        zi = griddata(points, data_array.value, (xi, yi), method="cubic")
-        colormap = plt.cm.jet
-        normalize = matplotlib.colors.Normalize(vmin=min_color, vmax=max_color)
-        ax_object.contourf(xi, yi, zi, 10, cmap=colormap, norm=normalize)
-        ax_object.axes.get_xaxis().set_ticks([])
-        ax_object.axes.get_yaxis().set_ticks([])
-        ax_object.spines['top'].set_visible(False)
-        ax_object.spines['right'].set_visible(False)
-        ax_object.spines['bottom'].set_visible(False)
-        ax_object.spines['left'].set_visible(False)
-
-    #########################################################
-    temporal_array = np.concatenate([delta.value, theta.value, alpha.value, beta.value])
-    min_color = np.min(temporal_array)
-    max_color = np.max(temporal_array)
-
-    ax = fig.add_subplot(grid_specs[0, 0])
-    single_topomap(ax, delta, min_color, max_color)
-    ax.set_xlabel("a) Delta band", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    single_topomap(ax, theta, min_color, max_color)
-    ax.set_xlabel("b) Theta band", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 0])
-    single_topomap(ax, alpha, min_color, max_color)
-    ax.set_xlabel("c) Alpha band", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 1])
-    single_topomap(ax, beta, min_color, max_color)
-    ax.set_xlabel("d) Beta band", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 2])
-    single_topomap(ax, all, min_color, max_color)
-    ax.set_xlabel("e) Original", fontsize=8)
-
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
-                    transparent=False, facecolor='white')
-
-    plt.show()
-
-
 def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
                                 stage_3: np.array, stage_4: np.array,
                                 stage_5: np.array, stage_6: np.array,
                                 stage_7: np.array, stage_8: np.array,
+                                stage_9: np.array, stage_10: np.array,
+                                stage_11: np.array,
                                 output_file: str=None, is_monopolar: bool=True):
     """
     Plot the topographic map per stage
@@ -584,8 +495,8 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
         electrode_positions = settings["bipolar_electrode_positions"]
         direction = "vertical"
 
-    grid_specs = GridSpec(2, 4, wspace=0.20, hspace=0.10)
-    fig = plt.figure(figsize=(12, 6))
+    grid_specs = GridSpec(3, 4, wspace=0.20, hspace=0.10)
+    fig = plt.figure(figsize=(12, 7))
     xi, yi = np.mgrid[-1:1:100j, -1:1:100j]
 
     def single_topomap(ax_object, data_array: np.array, min_color: int, max_color: int):
@@ -609,13 +520,15 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
         zi = griddata(points, data_array.value, (xi, yi), method="cubic")
         colormap = plt.cm.jet
         normalize = matplotlib.colors.Normalize(vmin=min_color, vmax=max_color)
-        ax_object.contourf(xi, yi, zi, 10, cmap=colormap, norm=normalize)
+        pcolormap = ax_object.contourf(xi, yi, zi, 10, cmap=colormap, norm=normalize)
         ax_object.axes.get_xaxis().set_ticks([])
         ax_object.axes.get_yaxis().set_ticks([])
         ax_object.spines['top'].set_visible(False)
         ax_object.spines['right'].set_visible(False)
         ax_object.spines['bottom'].set_visible(False)
         ax_object.spines['left'].set_visible(False)
+
+        return pcolormap
 
     #########################################################
     temporal_array = np.concatenate([stage_1[1].value, stage_2[1].value, stage_3[1].value, stage_4[1].value,
@@ -649,21 +562,410 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
-    single_topomap(ax, stage_8[1], min_color, max_color)
-    ax.set_xlabel(f"f) {stage_8[0]}", fontsize=8)
+    single_topomap(ax, stage_6[1], min_color, max_color)
+    ax.set_xlabel(f"f) {stage_6[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 2])
     single_topomap(ax, stage_7[1], min_color, max_color)
-    ax.set_xlabel(f"g) {stage_7[0]}", fontsize=8)
+    ax.set_xlabel(f"f) {stage_7[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 3])
-    single_topomap(ax, stage_6[1], min_color, max_color)
-    ax.set_xlabel(f"h) {stage_6[0]}", fontsize=8)
+    single_topomap(ax, stage_11[1], min_color, max_color)
+    ax.set_xlabel(f"g) {stage_11[0]}", fontsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, 0])
+    single_topomap(ax, stage_10[1], min_color, max_color)
+    ax.set_xlabel(f"h) {stage_10[0]}", fontsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, 1])
+    single_topomap(ax, stage_9[1], min_color, max_color)
+    ax.set_xlabel(f"h) {stage_9[0]}", fontsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, 2])
+    pcolormap = single_topomap(ax, stage_8[1], min_color, max_color)
+    ax.set_xlabel(f"h) {stage_8[0]}", fontsize=8)
+
+    ax = fig.add_subplot(grid_specs[2, 3])
+    fig.colorbar(pcolormap, ax=ax, shrink=1, orientation="vertical")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.axes.get_yaxis().set_ticks([])
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
                     transparent=False, facecolor='white')
 
+    plt.show()
+
+
+def plot_univariate_ml_bar_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
+                                 alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                                 all: pandas.DataFrame,
+                                 output_file: str=None):
+    """
+    Plot the eeg univariate features per band
+    :param delta: 
+    :param theta: 
+    :param alpha: 
+    :param beta:
+    :param all:
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.15)
+    fig = plt.figure(figsize=(7, 6))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.barplot(delta, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylim([0, 1])
+    ax.set_ylabel("Accuracy", fontsize=8)
+    ax.set_xlabel("a) delta", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.grid()
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.barplot(theta, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylim([0, 1])
+    ax.set_ylabel("")
+    ax.set_xlabel("b) theta", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.grid()
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.barplot(alpha, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.set_ylabel("Accuracy", fontsize=8)
+    ax.set_xlabel("c) alpha", fontsize=8)
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylim([0, 1])
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.grid()
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.barplot(beta, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.set_xlabel("d) beta", fontsize=8)
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylim([0, 1])
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.grid()
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, :])
+    seaborn.barplot(all, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.set_ylabel("Accuracy", fontsize=8)
+    ax.set_xlabel("e) Original", fontsize=8)
+    ax.set_ylim([0, 1])
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+    ax.grid()
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+
+def plot_univariate_inter_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
+                                        alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                                        _: pandas.DataFrame,
+                                        output_file: str=None):
+    """
+    Plot the eeg univariate features per band
+    :param delta: 
+    :param theta: 
+    :param alpha: 
+    :param beta:
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.20)
+    fig = plt.figure(figsize=(7, 5.5))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.barplot(delta, x="Group", y="value", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_xlabel("a) delta", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.barplot(theta, x="Group", y="value", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("b) theta", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.barplot(alpha, x="Group", y="value", ax=ax, palette="pastel")
+    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_xlabel("Group \n\n c) alpha", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.barplot(beta, x="Group", y="value", ax=ax, palette="pastel")
+    ax.set_ylabel("")
+    ax.set_xlabel("Group \n\n d) beta", fontsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
+                                         alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                                         _: pandas.DataFrame,
+                                         output_file: str=None):
+    """
+    Plot the eeg univariate features per band
+    :param delta: 
+    :param theta: 
+    :param alpha: 
+    :param beta:
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.15)
+    fig = plt.figure(figsize=(7, 5.5))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.violinplot(delta, x="value", hue="Group", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("Density", fontsize=8)
+    ax.set_xlabel("a) delta", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.violinplot(theta, x="value", hue="Group", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("b) theta", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.violinplot(alpha, x="value", hue="Group", ax=ax, palette="pastel")
+    ax.set_ylabel("Density", fontsize=8)
+    ax.set_xlabel("Feature value \n\n c) alpha", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.violinplot(beta, x="value", hue="Group", ax=ax, palette="pastel")
+    ax.set_xlabel("Feature value \n\n d) beta", fontsize=8)
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.get_legend().set_title(None)
+    texts = ax.get_legend().get_texts()
+    for t in texts:
+        t.set_size('x-small')
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
+                                        alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                                        output_file: str=None):
+    """
+    Plot the eeg univariate features per band
+    :param delta: 
+    :param theta: 
+    :param alpha: 
+    :param beta:
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.15)
+    fig = plt.figure(figsize=(7, 5.5))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_xlabel("a) delta", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.barplot(theta, x="time_point", y="value", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("b) theta", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel")
+    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_xlabel("c) alpha", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.barplot(beta, x="time_point", y="value", ax=ax, palette="pastel")
+    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_xlabel("d) beta", fontsize=8)
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+def plot_univariate_intra_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
+                                         alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                                         output_file: str=None):
+    """
+    Plot the eeg univariate features per band
+    :param delta: 
+    :param theta: 
+    :param alpha: 
+    :param beta:
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.20)
+    fig = plt.figure(figsize=(7, 5))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.kdeplot(delta, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("Density", fontsize=8)
+    ax.set_xlabel("a) delta", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.kdeplot(theta, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("b) theta", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.kdeplot(alpha, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.set_ylabel("Density", fontsize=8)
+    ax.set_xlabel("Feature value \n\n c) alpha", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.kdeplot(beta, x="value", hue="Time point", ax=ax, palette="pastel")
+    seaborn.move_legend(ax, "lower right", ncol=2)
+    ax.set_xlabel("Feature value \n\n d) beta", fontsize=8)
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.get_legend().set_title(None)
+    texts = ax.get_legend().get_texts()
+    for t in texts:
+        t.set_size('xx-small')
+ 
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+def plot_univariate_ml_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
+                                     alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                                     _: pandas.DataFrame,
+                                     output_file: str=None):
+    """
+    Plot the eeg univariate features per band
+    :param delta: 
+    :param theta: 
+    :param alpha: 
+    :param beta:
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.15)
+    fig = plt.figure(figsize=(7, 5))
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.barplot(delta, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylim([0, 1])
+    ax.set_ylabel("Accuracy", fontsize=8)
+    ax.set_xlabel("a) delta", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.grid()
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.barplot(theta, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylim([0, 1])
+    ax.set_ylabel("")
+    ax.set_xlabel("b) theta", fontsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.grid()
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.barplot(alpha, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.set_ylabel("Accuracy", fontsize=8)
+    ax.set_xlabel("c) alpha", fontsize=8)
+    ax.set_ylim([0, 1])
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+    ax.grid()
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.barplot(beta, x="experiment", y="accuracy", ax=ax, palette="pastel")
+    ax.set_xlabel("d) beta", fontsize=8)
+    ax.set_ylim([0, 1])
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+    ax.grid()
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
     plt.show()

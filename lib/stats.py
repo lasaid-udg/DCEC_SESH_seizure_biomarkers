@@ -63,7 +63,6 @@ class StatisticalTests():
         """
         sequential_p_values = []
         p_values = scikit_posthocs.posthoc_dunn(samples, p_adjust = "bonferroni")
-        print(p_values)
         for idx1, category1 in zip(range(len(samples)), settings["inter_windows_categories"]):
             for idx2, category2 in zip(range(idx1, len(samples)), settings["inter_windows_categories"][idx1:]):
                 if category1[0] == category2[0]:
@@ -86,8 +85,6 @@ class StatisticalTests():
         else:
             logging.info(f"Kruskal test, null hyphotesis was rejected, {details}")
             return numpy.round(p_value, 4), "Population median are not equal"
-
-        
 
     def run_lilliefors_test(self, samples: numpy.array):
         """
