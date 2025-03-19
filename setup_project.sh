@@ -37,12 +37,15 @@ mkdir ${BIOMARKERS_PROJECT_HOME}/slices/
 mkdir ${BIOMARKERS_PROJECT_HOME}/slices/chb-mit
 mkdir ${BIOMARKERS_PROJECT_HOME}/slices/siena
 mkdir ${BIOMARKERS_PROJECT_HOME}/slices/tusz
+mkdir ${BIOMARKERS_PROJECT_HOME}/slices/tuep
 mkdir ${BIOMARKERS_PROJECT_HOME}/windows/
 mkdir ${BIOMARKERS_PROJECT_HOME}/windows/chb-mit
 mkdir ${BIOMARKERS_PROJECT_HOME}/windows/siena
 mkdir ${BIOMARKERS_PROJECT_HOME}/windows/tusz
+mkdir ${BIOMARKERS_PROJECT_HOME}/windows/tuep
 mkdir ${BIOMARKERS_PROJECT_HOME}/reports/
 mkdir ${BIOMARKERS_PROJECT_HOME}/features/
 mkdir ${BIOMARKERS_PROJECT_HOME}/features/chb-mit
 mkdir ${BIOMARKERS_PROJECT_HOME}/features/siena
 mkdir ${BIOMARKERS_PROJECT_HOME}/features/tusz
+mkdir ${BIOMARKERS_PROJECT_HOME}/features/tuep
