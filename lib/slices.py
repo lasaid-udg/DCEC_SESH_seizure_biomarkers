@@ -46,7 +46,7 @@ class EegSlices:
 
     def summarize(self) -> None:
         """
-        Print the count of events per seizure type 
+        Print the count of events per seizure type
         """
         summary = {}
         for patient_metadata in self.metadata.values():
@@ -68,6 +68,7 @@ class EegSlicesSiena(EegSlices):
 class EegSlicesTusz(EegSlices):
     DATASET = "tusz"
 
+
 class EegSlicesTuep(EegSlices):
     DATASET = "tuep"
 
@@ -83,7 +84,7 @@ class WindowSelector:
         self.tolerance_lenght = settings["tolerance_length"] * sampling_frequency
         self.preictal_windows_start = settings["preictal_windows_start"]
         self.postictal_windows_start = settings["postictal_windows_start"]
-    
+
     def get_preictal_windows(self, metadata: dict, eeg_array: numpy.array) -> list:
         """
         :param metadata: seizure and eeg recording details
@@ -99,7 +100,7 @@ class WindowSelector:
             window_start = window_end - self.window_lenght
             windows.append(eeg_array[:, int(window_start): int(window_end)])
             counter += 1
-        
+
         return windows
 
     def get_ictal_windows(self, metadata: dict, eeg_array: numpy.array) -> list:
@@ -114,9 +115,9 @@ class WindowSelector:
         window_end = window_start + self.window_lenght
         window_1 = eeg_array[:, int(window_start): int(window_end)]
         metadata["windows"][counter] = ("ictal", 1)
-    
+
         middle_point = (metadata["seizure_end"] - metadata["seizure_start"]) / 2
-        
+
         window_start = ((metadata["seizure_start"] + middle_point) * self.sampling_frequency)
         window_end = window_start + self.window_lenght
         window_2 = eeg_array[:, int(window_start): int(window_end)]
@@ -129,7 +130,6 @@ class WindowSelector:
         metadata["windows"][counter + 2] = ("ictal", -1)
 
         return [window_1, window_2, window_3]
-
 
     def get_postictal_windows(self, metadata: dict, eeg_array: numpy.array) -> list:
         """
@@ -146,7 +146,7 @@ class WindowSelector:
             window_end = window_start + self.window_lenght
             windows.append(eeg_array[:, int(window_start): int(window_end)])
             counter += 1
-        
+
         return windows
 
     def get_windows(self, metadata: dict, eeg_array: numpy.array, ) -> Tuple[dict, numpy.array]:
@@ -173,6 +173,7 @@ class WindowSelector:
         eeg_window = eeg_array[:, int(window_start): int(window_end)]
         return metadata, eeg_window
 
+
 class EegWindows:
 
     def __init__(self):
@@ -183,7 +184,7 @@ class EegWindows:
     def __iter__(self):
         self._counter = 0
         return self
-    
+
     def __next__(self) -> Tuple[str, str]:
         if self._counter >= len(self._file_list):
             raise StopIteration

@@ -30,7 +30,8 @@ class StatisticalTests():
         p_values = bonferroni_factor * p_values
 
         for idx1, category1 in zip(range(len(samples)), settings["intra_windows_categories"]):
-            for idx2, category2 in zip(range(idx1, len(samples)), settings["intra_windows_categories"][idx1:]):
+            for idx2, category2 in zip(range(idx1, len(samples)),
+                                       settings["intra_windows_categories"][idx1:]):
                 if category1[3] == category2[3]:
                     continue
                 sequential_p_values.append([f"{category1[3]}-{category2[3]}", p_values.iloc[idx1][idx2]])
@@ -39,7 +40,7 @@ class StatisticalTests():
 
     def run_friedman_test(self, samples: list):
         """
-        Computes the Friedman test for the null hypothesis that repeated samples of 
+        Computes the Friedman test for the null hypothesis that repeated samples of
         the same individuals have the same distribution.
         :param samples: ranked samples
         """
@@ -56,15 +57,16 @@ class StatisticalTests():
     def run_posthoc_dunns(self, samples: list):
         """
         Calculate pairwise comparisons using Dunn's post hoc test.
-        The null hypothesis is that the probability of observing a randomly selected value 
+        The null hypothesis is that the probability of observing a randomly selected value
         from the first group that is larger than a randomly selected value from the second group is 0.5
         (therefore both distributions have the same median)
         :param samples: samples
         """
         sequential_p_values = []
-        p_values = scikit_posthocs.posthoc_dunn(samples, p_adjust = "bonferroni")
+        p_values = scikit_posthocs.posthoc_dunn(samples, p_adjust="bonferroni")
         for idx1, category1 in zip(range(len(samples)), settings["inter_windows_categories"]):
-            for idx2, category2 in zip(range(idx1, len(samples)), settings["inter_windows_categories"][idx1:]):
+            for idx2, category2 in zip(range(idx1, len(samples)),
+                                       settings["inter_windows_categories"][idx1:]):
                 if category1[0] == category2[0]:
                     continue
                 sequential_p_values.append([f"{category1[0]}-{category2[0]}", p_values.iloc[idx1][idx2 + 1]])
@@ -72,8 +74,8 @@ class StatisticalTests():
 
     def run_kruskal_wallis(self, samples: list):
         """
-        Computes the Kruskal Wallis H-test for the null hypothesis that 
-        the population median of all of the groups are equal. 
+        Computes the Kruskal Wallis H-test for the null hypothesis that
+        the population median of all of the groups are equal.
         :param samples: samples
         """
         _, p_value = scipy.stats.kruskal(*samples)
@@ -88,7 +90,7 @@ class StatisticalTests():
 
     def run_lilliefors_test(self, samples: numpy.array):
         """
-        Computes the Lilliefors test for the null hypothesis 
+        Computes the Lilliefors test for the null hypothesis
         that sample comes from a normal distribution
         :param samples: distribution samples
         """
@@ -137,12 +139,12 @@ class StatisticalTests():
         else:
             logging.info(f"KPSS test, null hyphotesis was rejected, {details}")
             is_trend_stationary = False
-        
+
         return p_value, is_trend_stationary
 
     def run_adf_test(self, time_serie: numpy.array):
         """
-        Computes the Augmented Dickey-Fuller test for the null hypothesis 
+        Computes the Augmented Dickey-Fuller test for the null hypothesis
         that there is a unit root (non-stationarity)
         :param time_serie: the data serie to test
         """
@@ -155,14 +157,14 @@ class StatisticalTests():
         else:
             logging.info(f"ADF test, null hyphotesis was rejected, {details}")
             is_stationary = True
-        
+
         return p_value, is_stationary
 
     def check_stationarity(self, time_serie: numpy.array):
         """
         Run KPSS and White test to check for trend and difference stationarity
         :param time_serie: the data serie to test
-        """ 
+        """
         _, is_trend_stationary = self.run_kpss_test(time_serie)
         _, is_variance_stationary = self.run_white_test_for_heteroscedasticity(time_serie)
 
@@ -190,7 +192,7 @@ class StationarityFile():
         self.database = database
         self.windows_lenghts = windows_lengths
         self.stationarity_results = os.path.join(os.getenv("BIOMARKERS_PROJECT_HOME"), "reports")
-    
+
     @property
     def stationarity_results(self) -> pandas.DataFrame:
         return self._stationarity_results
@@ -205,7 +207,7 @@ class StationarityFile():
             filename = f"stationarity_{self.database}_{length}s.csv"
             full_path = os.path.join(directory, filename)
             self._stationarity_results.append(pandas.read_csv(full_path))
-    
+
     def bar_chart(self):
         stationarity_results = []
         for result in self._stationarity_results:

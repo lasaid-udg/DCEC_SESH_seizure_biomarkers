@@ -23,8 +23,9 @@ class MlTools:
         target_2 = [1] * group_2.shape[0]
         targets = numpy.array(target_1 + target_2)
         features = numpy.concatenate([group_1, group_2], axis=0)
-        X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.33, random_state=42)
-        return X_train, X_test, y_train, y_test
+        x_train, x_test, y_train, y_test = train_test_split(features, targets,
+                                                            test_size=0.33, random_state=42)
+        return x_train, x_test, y_train, y_test
 
     @classmethod
     def train_and_score_naive_bayes(cls, x_train: numpy.array, x_test: numpy.array,

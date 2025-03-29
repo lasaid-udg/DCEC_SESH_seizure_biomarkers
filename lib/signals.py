@@ -10,7 +10,7 @@ from . import settings
 
 class EegProcessorBaseClass():
 
-    EXPECTED_SAMPLING_FREQUENCIES = [250, 256] 
+    EXPECTED_SAMPLING_FREQUENCIES = [250, 256]
 
     def __init__(self, filename: str):
         """
@@ -35,20 +35,20 @@ class EegProcessorBaseClass():
         not a multiple of any of EXPECTED_SAMPLING_FREQUENCIES
         """
         for expected_frequency in self.EXPECTED_SAMPLING_FREQUENCIES:
-            if (self.sampling_frequency >= expected_frequency and 
-                self.sampling_frequency % expected_frequency == 0):
+            if (self.sampling_frequency >= expected_frequency and
+                    self.sampling_frequency % expected_frequency == 0):
                 selected_frequency = expected_frequency
                 break
         else:
             assert False, "Not a valid sampling frequency"
 
         logging.info(f"Selected frequency is = {selected_frequency}")
-        downsampling_factor = int(self.sampling_frequency /selected_frequency)
+        downsampling_factor = int(self.sampling_frequency / selected_frequency)
         logging.info(f"Dowsampling factor is = {downsampling_factor}")
         self._data = scipy.signal.decimate(self._data, downsampling_factor)
         self.sampling_frequency = selected_frequency
 
-    def scale(self, ekg_reference: bool=False) -> None:
+    def scale(self, ekg_reference: bool = False) -> None:
         """
         Convert data from unitless to milivolts
         """
@@ -91,7 +91,7 @@ class EegProcessorBaseClass():
         reference_data = eeg_array.mean(0, keepdims=True)
         eeg_array -= reference_data
         return eeg_array
-    
+
     @classmethod
     def standardize(cls, eeg_array: numpy.array) -> numpy.array:
         """
@@ -327,7 +327,7 @@ class EegSlicer():
                         "seizure_end": new_seizure_end}
 
             logging.info(f"Valid slice was found, seizure_duration = {new_seizure_end - new_seizure_start}")
-            
+
             yield metadata, eeg_slice
 
     def compute_random_slices(self, number_slices: int, eeg_array: numpy.array) -> numpy.array:
@@ -345,5 +345,5 @@ class EegSlicer():
             slice_end = slice_end if slice_end < eeg_array.shape[1] else eeg_array.shape[1]
             eeg_slice = eeg_array[:, slice_start: slice_end]
 
-            logging.info(f"Valid slice was found")            
+            logging.info("Valid slice was found")
             yield eeg_slice

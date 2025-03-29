@@ -31,7 +31,7 @@ class MetadataChb():
 
         with open(file) as fp:
             lines = fp.readlines()
-        lines = [re.sub("\s+", " ", x.lower()) for x in lines]
+        lines = [re.sub(r"\s+", " ", x.lower()) for x in lines]
 
         skip = True
         clean_lines = []
@@ -63,19 +63,19 @@ class MetadataChb():
         """
         Detect the [start_time, end_time] for each seizure
         :param text_lines: content of the metadata file
-        """   
+        """
         seizures = [(0.0, 0.0, "NULL")]
-        filename = re.search("(?<=:)\s.+", text_lines[0]).group(0).strip()
-        number_seizures = int(re.findall("(?<=:\s).+", text_lines[1])[0])
+        filename = re.search(r"(?<=:)\s.+", text_lines[0]).group(0).strip()
+        number_seizures = int(re.findall(r"(?<=:\s).+", text_lines[1])[0])
 
         if number_seizures == 0:
             return filename, set()
 
         for idx in range(number_seizures):
             text = text_lines[(idx+1)*2]
-            start = int(re.findall("(?<=:\s)[0-9]+", text)[0])
+            start = int(re.findall(r"(?<=:\s)[0-9]+", text)[0])
             text = text_lines[(idx+1)*2 + 1]
-            end = int(re.findall("(?<=:\s)[0-9]+", text)[0])
+            end = int(re.findall(r"(?<=:\s)[0-9]+", text)[0])
             seizures.append((start, end, "NULL"))
         return filename, tuple(seizures)
 
@@ -108,8 +108,7 @@ class MetadataSiena():
             if "File name" in line:
                 filename = line.split(" ")[-1][:-1]
                 patient_id = filename.split("-")[0]
-                seizures = self.get_seizure_single_file(lines[index+1:
-                                                             index+5],
+                seizures = self.get_seizure_single_file(lines[index+1:index+5],
                                                         patient_id)
                 if filename not in self._seizure_ranges:
                     self._seizure_ranges[filename] = {"full_file": os.path.join(*(["/"] + file.split("/")[:-1] + [filename])),
@@ -121,11 +120,11 @@ class MetadataSiena():
         Detect the [start_time, end_time] for each seizure
         :param text_lines: content of the metadata file
         :param patient_id: id of the patient
-        """   
+        """
         assert "Registration start" in text_lines[0]
-        recording_start_time = re.search("(?<=:\s).*", text_lines[0]).group(0)
-        seizure_start_time = re.search("(?<=:\s).*", text_lines[2]).group(0)
-        seizure_end_time = re.search("(?<=:\s).*", text_lines[3]).group(0)
+        recording_start_time = re.search(r"(?<=:\s).*", text_lines[0]).group(0)
+        seizure_start_time = re.search(r"(?<=:\s).*", text_lines[2]).group(0)
+        seizure_end_time = re.search(r"(?<=:\s).*", text_lines[3]).group(0)
         recording_start_time = datetime.strptime(recording_start_time.strip(),
                                                  "%H.%M.%S")
         seizure_start_time = datetime.strptime(seizure_start_time.strip(),
@@ -176,7 +175,7 @@ class MetadataTusz():
         """
         Detect the [start_time, end_time] for each seizure
         :param text_lines: content of the metadata file
-        """   
+        """
         seizures_ranges = []
         with open(file) as fp:
             lines = fp.readlines()
@@ -196,7 +195,7 @@ class MetadataTusz():
         Detect seizure for each ictal event
         :param file: path to the metadata file
         :param seizure_ranges: output of the method ´get_seizures_ranges´
-        """   
+        """
         seizure_types = set()
         with open(file) as fp:
             lines = fp.readlines()
@@ -282,10 +281,10 @@ class MetadataListChb():
         for x in glob.glob(os.path.join(root_dir, "**/*-summary.txt")):
             patient = x.split("/")[-1].split("-")[0]
             self._patient_metadata.update({patient: MetadataChb(x)})
-    
+
     def summarize(self) -> None:
         """
-        Print the count of events per seizure type 
+        Print the count of events per seizure type
         """
         summary = {}
         for metadata in self.patient_metadata.values():
@@ -332,7 +331,7 @@ class MetadataListSiena():
 
     def summarize(self) -> None:
         """
-        Print the count of events per seizure type 
+        Print the count of events per seizure type
         """
         summary = {}
         for metadata in self.patient_metadata.values():
@@ -382,7 +381,7 @@ class MetadataListTusz():
 
     def summarize(self) -> None:
         """
-        Print the count of events per seizure type 
+        Print the count of events per seizure type
         """
         summary = {}
         for metadata in self.patient_metadata.values():
@@ -393,7 +392,6 @@ class MetadataListTusz():
                         summary[event[-1]] = 0
                     summary[event[-1]] += 1
         print(json.dumps(summary, indent=4))
-
 
 
 class MetadataListTuep():

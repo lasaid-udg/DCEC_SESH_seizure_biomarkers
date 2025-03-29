@@ -10,7 +10,7 @@ class FourierAnalysis():
         :param sampling_frequency: sampling_frequency [Hz]
         """
         self.sampling_frequency = sampling_frequency
-    
+
     def run_fast_fourier_transform(self, signal: numpy.array) -> Tuple[numpy.array, numpy.array]:
         """
         Return the complex values of the Fast Fourier Transform.
