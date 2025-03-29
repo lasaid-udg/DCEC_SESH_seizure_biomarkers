@@ -55,7 +55,6 @@ def main():
     analyzer.univariate_zone_violin_chart("occipital")
     time.sleep(3)
 
-
     logging.info("Processing database CHB-MIT")
 
     logging.info(f"Processing feature = {FEATURE}")

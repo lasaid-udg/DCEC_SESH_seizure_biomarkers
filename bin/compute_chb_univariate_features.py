@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 sys.path.append("../")
 from lib.slices import EegWindowsChb
 from lib.filters import BandEstimator
-from lib.features import UnivariateFeatureGateway
+from lib.features import FeatureGateway
 
 
 FEATURE = docopt(__doc__)["--feature"]
@@ -22,7 +22,7 @@ OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 
 def main():
     windows_chb = EegWindowsChb()
-    feature_estimator = UnivariateFeatureGateway()
+    feature_estimator = FeatureGateway()
     feature_list = []
     counter = 0
 

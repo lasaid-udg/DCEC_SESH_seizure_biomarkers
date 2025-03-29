@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 sys.path.append("../")
 from lib.slices import EegWindowsTuep
 from lib.filters import BandEstimator
-from lib.features import UnivariateFeatureGateway
+from lib.features import FeatureGateway
 
 
 FEATURE = docopt(__doc__)["--feature"]
@@ -21,12 +21,12 @@ OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 
 
 def main():
-    windows_tusz = EegWindowsTuep()
-    feature_estimator = UnivariateFeatureGateway()
+    windows_tuep = EegWindowsTuep()
+    feature_estimator = FeatureGateway()
     feature_list = []
     counter = 0
 
-    for metadata, window in iter(windows_tusz):
+    for metadata, window in iter(windows_tuep):
         logging.info(f"Processing patient = {metadata['patient']}")
         counter += 1
         eeg_array = window[:, :]
