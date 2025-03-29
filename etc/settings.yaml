@@ -350,3 +350,4 @@ univariate_features:
   - katz_fractal_dimension
   - approximate_entropy
   - power_spectral_density
+  - phase_lock_value

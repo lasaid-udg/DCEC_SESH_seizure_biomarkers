@@ -1,11 +1,13 @@
 docopt
+flake8
 jupyter
 mne
 mne-features
+networkx
 pandasql
 python-dotenv
 PyYAML
-flake8
+pep8-naming
 scikit-learn
 scikit-posthocs
 scipy
