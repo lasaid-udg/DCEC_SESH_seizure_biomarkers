@@ -4,7 +4,7 @@ import random
 import logging
 import numpy as numpy
 import scipy.signal
-from typing import Iterable
+from typing import Generator
 from . import settings
 
 
@@ -295,7 +295,7 @@ class EegSlicer():
         self.postictal_min_lenght = settings["postictal_min_lenght"]
         self.sampling_frequency = sampling_frequency
 
-    def compute_slices(self, seizure_ranges: str, eeg_array: numpy.array) -> Iterable[tuple]:
+    def compute_slices(self, seizure_ranges: list, eeg_array: numpy.array) -> Generator[tuple]:
         """
         Split a full seizure cycle: preictal stage - ictal stage - postictal state.
         Eeg array and metadata are stored.
@@ -303,7 +303,7 @@ class EegSlicer():
         :param eeg_array: full eeg recording
         """
         for idx in range(1, len(seizure_ranges[:-1])):
-            if (seizure_ranges[idx][0] - seizure_ranges[idx-1][1]) < self.preictal_min_length:
+            if (seizure_ranges[idx][0] - seizure_ranges[idx - 1][1]) < self.preictal_min_length:
                 logging.info(f"Preictal period is less than = {self.preictal_min_length}, skipping seizure")
                 continue
             if (seizure_ranges[idx][1] - seizure_ranges[idx][0]) < self.ictal_min_length:
@@ -330,11 +330,11 @@ class EegSlicer():
 
             yield metadata, eeg_slice
 
-    def compute_random_slices(self, number_slices: int, eeg_array: numpy.array) -> numpy.array:
+    def compute_random_slices(self, number_slices: int, eeg_array: numpy.array) -> Generator[numpy.array]:
         """
         Select a set of random slices from an eeg recording.
         :param number_slices: number of slices
-        :param eeg_array: full eeg recording
+        :param eeg_array: full eeg recording [channels x samples]
         """
         for _ in range(number_slices):
             middle_point = random.randint(0, eeg_array.shape[1])

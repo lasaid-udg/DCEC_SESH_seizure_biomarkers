@@ -8,7 +8,7 @@ class FilterBank():
 
     def __init__(self, sampling_frequency: int):
         """
-        :param sampling_frequency: sampling_frequency [Hz]
+        :param sampling_frequency: sampling frequency [Hz]
         """
         self.sampling_frequency = sampling_frequency
         self.notch_qa_factor = settings["notch_qa_factor"]
@@ -64,7 +64,7 @@ class FilterBank():
                         get_freqz: bool = False) -> Tuple[numpy.array, numpy.array]:
         """
         Return numerator (b) and denominator (a) polynomials of the butterworth filter.
-        :param cut_frequency: critical frequency [Low Hz, High Hz]
+        :param cut_frequency: critical frequencies [Low Hz, High Hz]
         :param get_freqz: if true it will return the filter's frequency response
         """
         b, a = scipy.signal.butter(order, cut_frequency,
@@ -91,6 +91,11 @@ class BandEstimator():
 
     @classmethod
     def get_eeg_bands(cls, eeg_array: numpy.array, sampling_frequency: int) -> tuple:
+        """
+        Separate eeg signal into individual bands
+        :param eeg_array: matrix with the eeg recording [channels x samples]
+        :param sampling_frequency: sampling frequency [Hz]
+        """
         filter_bank = FilterBank(sampling_frequency)
         delta = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][0])
         theta = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][1])

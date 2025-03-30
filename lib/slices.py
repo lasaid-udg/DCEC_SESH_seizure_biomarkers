@@ -7,7 +7,7 @@ from typing import Tuple
 from . import settings
 
 
-class EegSlices:
+class EegSlices():
 
     def __init__(self):
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
@@ -33,7 +33,7 @@ class EegSlices:
                 self._metadata[single_metadata["patient"]] = []
             self._metadata[single_metadata["patient"]].append(single_metadata)
 
-    def get(self, patient: str, seizure_number: str) -> Tuple[dict, numpy.array]:
+    def get(self, patient: str, seizure_number: int) -> Tuple[dict, numpy.array]:
         """
         Return metadata and eeg slice for a single patient
         :param patient: patient id
@@ -73,9 +73,9 @@ class EegSlicesTuep(EegSlices):
     DATASET = "tuep"
 
 
-class WindowSelector:
+class WindowSelector():
 
-    def __init__(self, sampling_frequency):
+    def __init__(self, sampling_frequency: str):
         """
         :param sampling_frequency: sampling_frequency [Hz]
         """
@@ -162,7 +162,7 @@ class WindowSelector:
 
         return metadata, numpy.stack(preictal_windows + ictal_windows + postictal_windows)
 
-    def get_random_window(self, metadata: dict, eeg_array: numpy.array, ) -> Tuple[dict, numpy.array]:
+    def get_random_window(self, metadata: dict, eeg_array: numpy.array) -> Tuple[dict, numpy.array]:
         """
         Crop a random window from eeg_array
         :param metadata: seizure and eeg recording details
@@ -174,7 +174,7 @@ class WindowSelector:
         return metadata, eeg_window
 
 
-class EegWindows:
+class EegWindows():
 
     def __init__(self):
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")

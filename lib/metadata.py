@@ -72,9 +72,9 @@ class MetadataChb():
             return filename, set()
 
         for idx in range(number_seizures):
-            text = text_lines[(idx+1)*2]
+            text = text_lines[(idx + 1) * 2]
             start = int(re.findall(r"(?<=:\s)[0-9]+", text)[0])
-            text = text_lines[(idx+1)*2 + 1]
+            text = text_lines[(idx + 1) * 2 + 1]
             end = int(re.findall(r"(?<=:\s)[0-9]+", text)[0])
             seizures.append((start, end, "NULL"))
         return filename, tuple(seizures)
@@ -108,7 +108,7 @@ class MetadataSiena():
             if "File name" in line:
                 filename = line.split(" ")[-1][:-1]
                 patient_id = filename.split("-")[0]
-                seizures = self.get_seizure_single_file(lines[index+1:index+5],
+                seizures = self.get_seizure_single_file(lines[index + 1:index + 5],
                                                         patient_id)
                 if filename not in self._seizure_ranges:
                     self._seizure_ranges[filename] = {"full_file": os.path.join(*(["/"] + file.split("/")[:-1] + [filename])),
@@ -157,7 +157,7 @@ class MetadataTusz():
     def seizure_ranges(self, files: list) -> None:
         """
         Read and parse a set of metadata files
-        :param file: list of paths to the metadata file
+        :param files: list of paths to the metadata file
         """
         self._seizure_ranges = {}
 
@@ -171,10 +171,10 @@ class MetadataTusz():
             seizure_ranges = self.get_seizures_types(file.replace(".csv_bi", ".csv"), seizure_ranges)
             self._seizure_ranges[filename]["seizures"].extend(seizure_ranges)
 
-    def get_seizures_ranges(self, file) -> list:
+    def get_seizures_ranges(self, file: str) -> list:
         """
         Detect the [start_time, end_time] for each seizure
-        :param text_lines: content of the metadata file
+        :param file: path to the metadata file
         """
         seizures_ranges = []
         with open(file) as fp:
@@ -192,7 +192,7 @@ class MetadataTusz():
 
     def get_seizures_types(self, file: str, seizure_ranges: str) -> list:
         """
-        Detect seizure for each ictal event
+        Detect the seizure type for each ictal event
         :param file: path to the metadata file
         :param seizure_ranges: output of the method ´get_seizures_ranges´
         """
@@ -238,7 +238,7 @@ class MetadataTuep():
     def recordings(self, files: list) -> None:
         """
         Read and parse a set of metadata files
-        :param file: list of paths to the metadata file
+        :param files: list of paths to the metadata file
         """
         self._recordings = {}
 
@@ -428,3 +428,54 @@ class MetadataListTuep():
 
         for patient, files in _grouped_files.items():
             self._patient_metadata.update({patient: MetadataTuep(files)})
+
+
+class ChannelBasedMetadataTusz():
+
+    def __init__(self, source_file: str):
+        """
+        :param source_file: full filename of the edf recording
+        """
+        self.seizure_ranges = source_file
+
+    @property
+    def seizure_ranges(self) -> dict:
+        return self._seizure_ranges
+
+    @seizure_ranges.setter
+    def seizure_ranges(self, file: str) -> None:
+        """
+        Read and parse a single metadata file
+        :param file: full filename of the edf recording
+        """
+        file = file.replace(".edf", ".csv")
+        with open(file) as fp:
+            lines = fp.readlines()
+
+        for idx, line in enumerate(lines):
+            if "confidence" in line:
+                break
+
+        max_value = 0
+        impacted_channels = defaultdict(list)
+        for line in lines[idx + 1:]:
+            columns = line.split(",")
+            if columns[3] == "bckg":
+                continue
+            channel = columns[0].split("-")[0]
+            seizure_start = int(float(columns[1]))
+            seizure_end = int(float(columns[2]))
+            impacted_channels[channel].append((seizure_start, seizure_end))
+
+            if seizure_end > max_value:
+                max_value = seizure_end
+
+        detailed_impacted_channels = dict()
+        for second in range(max_value):
+            detailed_impacted_channels[second] = []
+            for channel, ranges in impacted_channels.items():
+                for _range in ranges:
+                    if second > _range[0] and second < _range[1]:
+                        detailed_impacted_channels[second].append(channel)
+
+        self._seizure_ranges = detailed_impacted_channels

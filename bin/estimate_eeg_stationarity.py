@@ -21,18 +21,18 @@ def main():
     database_slicers = [EegSlicesChb, EegSlicesSiena, EegSlicesTusz]
     database_names = ["chb", "siena", "tusz"]
 
-    for DatabaseSlicer, database_name in zip(database_slicers, database_names):
+    for database_slicer, database_name in zip(database_slicers, database_names):
         logging.info(f"Processing database = {database_name}")
 
         for window_length in WINDOW_PROPOSALS:
             stationarity_evaluation = dict()
-            slicer = DatabaseSlicer()
+            slicer = database_slicer()
             global_metadata = slicer.metadata
-        
+
             for patient, patient_metadata in global_metadata.items():
                 logging.info(f"Processing patient = {patient}")
                 for seizure_number in range(len(patient_metadata)):
-                    logging.info(f"Processing eeg slice")
+                    logging.info("Processing eeg slice")
                     seizure_metadata, eeg_slice = slicer.get(patient, seizure_number)
                     eeg_slice = EegProcessorBaseClass.standardize(eeg_slice)
 
@@ -62,7 +62,7 @@ def main():
 
             output_file = f"stationarity_{database_name}_{window_length}s.csv"
             output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
-            
+
             normalized_stationarity_evaluation = pandas.DataFrame(normalized_stationarity_evaluation)
             normalized_stationarity_evaluation.to_csv(output_file, index=False)
 

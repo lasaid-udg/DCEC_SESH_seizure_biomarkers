@@ -13,8 +13,9 @@ warnings.filterwarnings("ignore")
 sys.path.append("../")
 from lib import settings
 from lib.stats import StatisticalTests
-from lib.analyzers import IntraBivariateChbAnalyzer, IntraBivariateSienaAnalyzer, IntraBivariateTuszAnalyzer, \
-                          InterBivariateSienaAnalyzer, InterBivariateTuszAnalyzer
+from lib.analyzers import IntraBivariateChbAnalyzer, IntraBivariateSienaAnalyzer, \
+                          IntraBivariateTuszAnalyzer, InterBivariateSienaAnalyzer, \
+                          InterBivariateTuszAnalyzer
 
 
 FEATURE = docopt(__doc__)["--feature"]
@@ -84,7 +85,7 @@ def main():
 
     normalized_stationarity_evaluation = pandas.DataFrame(test_results)
     normalized_stationarity_evaluation.to_csv(output_file, index=False)
-    
+
     ########################################################################
     logging.info("Processing database CHB-MIT")
     test_results = []
@@ -103,11 +104,11 @@ def main():
                 continue
             nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
             test_result = {"feature": FEATURE,
-                            "seizure_type": "unknown",
-                            "group_size": len(group[1][0]),
-                            "region": region,
-                            "band": group[0],
-                            "friedman_p_value": friedman_p_value}
+                           "seizure_type": "unknown",
+                           "group_size": len(group[1][0]),
+                           "region": region,
+                           "band": group[0],
+                           "friedman_p_value": friedman_p_value}
             test_result.update({key: value for (key, value) in nemenyi_p_values})
             test_results.append(test_result)
 

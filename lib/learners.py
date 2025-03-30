@@ -1,21 +1,19 @@
 import numpy
-from typing import Tuple
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split
 
 
-class MlTools:
+class MlTools():
 
     def __init__():
         pass
 
     @classmethod
-    def get_train_test_data(cls, group_1: numpy.array, group_2: numpy.array) -> Tuple:
+    def get_train_test_data(cls, group_1: numpy.array, group_2: numpy.array) -> tuple:
         """
-        Generate the target for each class and return the train set
-        and test set
-        :param group_1: class 1 instances, [samples x features]
-        :param group_2: class 2 instances, [samples x features]
+        Generate the train/test set
+        :param group_1: class 1 instances [samples x features]
+        :param group_2: class 2 instances [samples x features]
         """
         group_1 = group_1.T
         group_2 = group_2.T
@@ -32,6 +30,10 @@ class MlTools:
                                     y_train: numpy.array, y_test: numpy.array) -> float:
         """
         Train a Gaussian Naive Bayes and compute the classification accuracy
+        :param x_train: instances for training
+        :param x_test: instances for testing
+        :param y_train: targets for training
+        :param y_test: targets for testing
         """
         learner = GaussianNB()
         learner.fit(x_train, y_train)

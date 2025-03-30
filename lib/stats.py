@@ -17,7 +17,7 @@ class StatisticalTests():
     def __init__(self):
         self.significance_level = 0.05
 
-    def run_posthoc_nemenyi(self, samples: list):
+    def run_posthoc_nemenyi(self, samples: list) -> list:
         """
         Calculate pairwise comparisons using Nemenyi post hoc test.
         The null hypothesis is that mean value for each of the populations is equal.
@@ -38,7 +38,7 @@ class StatisticalTests():
 
         return sequential_p_values
 
-    def run_friedman_test(self, samples: list):
+    def run_friedman_test(self, samples: list) -> tuple:
         """
         Computes the Friedman test for the null hypothesis that repeated samples of
         the same individuals have the same distribution.
@@ -54,13 +54,13 @@ class StatisticalTests():
             logging.info(f"Friedman test, null hyphotesis was rejected, {details}")
             return numpy.round(p_value, 4), "Samples doesn't come from same distribution"
 
-    def run_posthoc_dunns(self, samples: list):
+    def run_posthoc_dunns(self, samples: list) -> list:
         """
         Calculate pairwise comparisons using Dunn's post hoc test.
         The null hypothesis is that the probability of observing a randomly selected value
         from the first group that is larger than a randomly selected value from the second group is 0.5
         (therefore both distributions have the same median)
-        :param samples: samples
+        :param samples: groups for comparison
         """
         sequential_p_values = []
         p_values = scikit_posthocs.posthoc_dunn(samples, p_adjust="bonferroni")
@@ -72,11 +72,11 @@ class StatisticalTests():
                 sequential_p_values.append([f"{category1[0]}-{category2[0]}", p_values.iloc[idx1][idx2 + 1]])
         return sequential_p_values
 
-    def run_kruskal_wallis(self, samples: list):
+    def run_kruskal_wallis(self, samples: list) -> tuple:
         """
         Computes the Kruskal Wallis H-test for the null hypothesis that
         the population median of all of the groups are equal.
-        :param samples: samples
+        :param samples: groups for comparison
         """
         _, p_value = scipy.stats.kruskal(*samples)
         details = f"p_value = {p_value}, significance level = {self.significance_level}"
@@ -88,11 +88,11 @@ class StatisticalTests():
             logging.info(f"Kruskal test, null hyphotesis was rejected, {details}")
             return numpy.round(p_value, 4), "Population median are not equal"
 
-    def run_lilliefors_test(self, samples: numpy.array):
+    def run_lilliefors_test(self, samples: numpy.array) -> tuple:
         """
         Computes the Lilliefors test for the null hypothesis
         that sample comes from a normal distribution
-        :param samples: distribution samples
+        :param samples: distribution sample
         """
         _, p_value = diagnostic.lilliefors(samples)
         details = f"p_value = {p_value}, significance level = {self.significance_level}"
@@ -104,16 +104,17 @@ class StatisticalTests():
             logging.info(f"Lilliefors test, null hyphotesis was rejected, {details}")
             return p_value, "Data doesn't come from normal distribution"
 
-    def run_white_test_for_heteroscedasticity(self, time_serie: numpy.array):
+    def run_white_test_for_heteroscedasticity(self, time_serie: numpy.array) -> tuple:
         """
         Computes the White’s Lagrange Multiplier Test. The null hyphotesis
         is that time series is homoscedastic (i.e. it has a time-independent variance),
         Another interpretation is that variance of the errors in a regression model is constant.
+        :param time_serie: sample from a time serie
         """
         time_range = numpy.linspace(0, len(time_serie) / 256, len(time_serie))
         time_range = statsmodels.api.add_constant(time_range)
         model = statsmodels.api.OLS(time_serie, time_range).fit()
-        _, _, fvalue, f_p_value = diagnostic.het_white(model.resid,  model.model.exog)
+        _, _, _, f_p_value = diagnostic.het_white(model.resid, model.model.exog)
         details = f"p_value = {f_p_value}, significance level = {self.significance_level}"
 
         if f_p_value > 0.05:
@@ -124,11 +125,11 @@ class StatisticalTests():
             is_variance_stationary = False
         return f_p_value, is_variance_stationary
 
-    def run_kpss_test(self, time_serie: numpy.array):
+    def run_kpss_test(self, time_serie: numpy.array) -> tuple:
         """
         Computes the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test
         for the null hypothesis that data serie is level or trend stationary
-        :param time_serie: the data serie to test
+        :param time_serie: sample from a time serie
         """
         _, p_value, _, _ = stattools.kpss(time_serie, regression="c")
         details = f"p_value = {p_value}, significance level = {self.significance_level}"
@@ -142,11 +143,11 @@ class StatisticalTests():
 
         return p_value, is_trend_stationary
 
-    def run_adf_test(self, time_serie: numpy.array):
+    def run_adf_test(self, time_serie: numpy.array) -> tuple:
         """
         Computes the Augmented Dickey-Fuller test for the null hypothesis
         that there is a unit root (non-stationarity)
-        :param time_serie: the data serie to test
+        :param time_serie: sample from a time serie
         """
         _, p_value, _, _, _, _ = stattools.adfuller(time_serie, regression="c")
         details = f"p_value = {p_value}, significance level = {self.significance_level}"
@@ -160,10 +161,10 @@ class StatisticalTests():
 
         return p_value, is_stationary
 
-    def check_stationarity(self, time_serie: numpy.array):
+    def check_stationarity(self, time_serie: numpy.array) -> str:
         """
         Run KPSS and White test to check for trend and difference stationarity
-        :param time_serie: the data serie to test
+        :param time_serie: sample from a time serie
         """
         _, is_trend_stationary = self.run_kpss_test(time_serie)
         _, is_variance_stationary = self.run_white_test_for_heteroscedasticity(time_serie)
@@ -208,7 +209,10 @@ class StationarityFile():
             full_path = os.path.join(directory, filename)
             self._stationarity_results.append(pandas.read_csv(full_path))
 
-    def bar_chart(self):
+    def bar_chart(self) -> None:
+        """
+        Plot the amount of stationary windows across window-lengths
+        """
         stationarity_results = []
         for result in self._stationarity_results:
             grouped_result = sqldf("SELECT result, SUM(count) AS count FROM result GROUP BY result")

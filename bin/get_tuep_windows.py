@@ -18,11 +18,11 @@ OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 def main():
     slices_tuep = EegSlicesTuep()
     global_metadata = slices_tuep.metadata
-    
+
     for patient, patient_metadata in global_metadata.items():
         logging.info(f"Processing patient = {patient}")
         for slice_number in range(len(patient_metadata)):
-            logging.info(f"Processing eeg slice")
+            logging.info("Processing eeg slice")
             slice_metadata, eeg_slice = slices_tuep.get(patient, slice_number)
 
             ###########################################################

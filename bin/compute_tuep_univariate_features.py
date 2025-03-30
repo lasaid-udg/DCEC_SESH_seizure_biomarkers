@@ -35,28 +35,29 @@ def main():
             delta, theta, alpha, beta = BandEstimator.get_eeg_bands(eeg_array,
                                                                     metadata["sampling_frequency"])
 
-            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"], [delta, theta, alpha, beta, eeg_array]):
+            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"],
+                                       [delta, theta, alpha, beta, eeg_array]):
                 logging.info(f"Processing band = {band_name}")
 
-                for channel_number, channel_name in enumerate(metadata["channels"]): 
+                for channel_number, channel_name in enumerate(metadata["channels"]):
                     feature_value = feature_estimator(FEATURE, band[channel_number, :])
                     feature_list.append({"patient": metadata["patient"],
-                                        "band": band_name,
-                                        "channel": channel_name,
-                                        "feature": FEATURE,
-                                        "value": feature_value})
+                                         "band": band_name,
+                                         "channel": channel_name,
+                                         "feature": FEATURE,
+                                         "value": feature_value})
 
         else:
-            for channel_number, channel_name in enumerate(metadata["channels"]): 
-                logging.info(f"Processing instance")
-                densities = feature_estimator(FEATURE, eeg_array[channel_number, :], metadata["sampling_frequency"])
+            for channel_number, channel_name in enumerate(metadata["channels"]):
+                logging.info("Processing instance")
+                densities = feature_estimator(FEATURE, eeg_array[channel_number, :],
+                                              metadata["sampling_frequency"])
                 for band_name, density in zip(["delta", "theta", "alpha", "beta", "all"], densities):
                     feature_list.append({"patient": metadata["patient"],
-                                            "band": band_name,
-                                            "channel": channel_name,
-                                            "feature": FEATURE,
-                                            "value": density})
-
+                                         "band": band_name,
+                                         "channel": channel_name,
+                                         "feature": FEATURE,
+                                         "value": density})
 
     feature_df = pandas.DataFrame(feature_list)
     output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "features", "tuep", f"{FEATURE}.csv")

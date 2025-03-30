@@ -3,6 +3,7 @@ import numpy
 import pandas
 import logging
 import networkx
+from typing import Generator
 from pandasql import sqldf
 from . import settings
 from .visuals import plot_univariate_intra_bar_chart, plot_univariate_intra_dist_chart, \
@@ -18,7 +19,7 @@ class IntraUnivariateFeatureAnalyzer():
 
     def __init__(self, feature_name: str):
         """
-        :param feature_name: name of the feature file
+        :param feature_name: name of the feature for analysis
         """
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
         self.base_path = os.path.join(base_path, "features", self.DATASET, f"{feature_name}.csv")
@@ -34,25 +35,27 @@ class IntraUnivariateFeatureAnalyzer():
     @raw_features.setter
     def raw_features(self, filename: str) -> None:
         """
-        :param feature: full path to the feature file
+        Read the CSV file for the selected feature
+        :param filename: full path to the feature file
         """
         self._raw_features = pandas.read_csv(filename)
 
     def univariate_zone_bar_chart(self, zone: str, seizure_type: str) -> None:
         """
-        Separate data into groups for bar evaluation
-        :param region: name of the brain zone
+        Separate data into groups and plot bar chart
+        :param zone: name of the brain zone
         :param seizure_type: type of seizure
         """
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         channel_groups = self.univariate_channels_groups[zone]
         features = features[features.channel.isin(channel_groups)]
 
         for stage in settings["intra_windows_categories"]:
-                features.loc[((features.time_point == stage[1]) & (features.seizure_stage == stage[0])), "time_point"] = stage[3]
+            features.loc[((features.time_point == stage[1]) &
+                          (features.seizure_stage == stage[0])), "time_point"] = stage[3]
 
         delta_features = features[features.band == "delta"]
         theta_features = features[features.band == "theta"]
@@ -61,27 +64,33 @@ class IntraUnivariateFeatureAnalyzer():
         all_features = features[features.band == "all"]
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"bar_intra_{self.feature_name}_{zone}_{seizure_type}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"bar_intra_{self.feature_name}_{zone}_{seizure_type}.png")
         if self.feature_name != "power_spectral_density":
-            plot_univariate_intra_bar_chart(delta_features, theta_features, alpha_features, beta_features, all_features, output_file)
+            plot_univariate_intra_bar_chart(delta_features, theta_features,
+                                            alpha_features, beta_features,
+                                            all_features, output_file)
         else:
-            plot_univariate_intra_bar_chart_psd(delta_features, theta_features, alpha_features, beta_features, output_file)
+            plot_univariate_intra_bar_chart_psd(delta_features, theta_features,
+                                                alpha_features, beta_features,
+                                                output_file)
 
     def univariate_zone_dist_chart(self, zone: str, seizure_type: str) -> None:
         """
-        Separate data into groups for distribution chart
-        :param region: name of the brain zone
+        Separate data into groups and plot KDE chart
+        :param zone: name of the brain zone
         :param seizure_type: type of seizure
         """
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         channel_groups = self.univariate_channels_groups[zone]
         features = features[features.channel.isin(channel_groups)]
         features["Time point"] = "unknown"
         for stage in settings["intra_windows_categories"]:
-                features.loc[((features.time_point == stage[1]) & (features.seizure_stage == stage[0])), "Time point"] = stage[3]
+            features.loc[((features.time_point == stage[1]) &
+                          (features.seizure_stage == stage[0])), "Time point"] = stage[3]
 
         delta_features = features[features.band == "delta"]
         theta_features = features[features.band == "theta"]
@@ -90,21 +99,26 @@ class IntraUnivariateFeatureAnalyzer():
         all_features = features[features.band == "all"]
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"dist_intra_{self.feature_name}_{zone}_{seizure_type}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"dist_intra_{self.feature_name}_{zone}_{seizure_type}.png")
         if self.feature_name != "power_spectral_density":
-            plot_univariate_intra_dist_chart(delta_features, theta_features, alpha_features, beta_features, all_features, output_file)
+            plot_univariate_intra_dist_chart(delta_features, theta_features,
+                                             alpha_features, beta_features,
+                                             all_features, output_file)
         else:
-            plot_univariate_intra_dist_chart_psd(delta_features, theta_features, alpha_features, beta_features, output_file)
+            plot_univariate_intra_dist_chart_psd(delta_features, theta_features,
+                                                 alpha_features, beta_features,
+                                                 output_file)
 
     def univariate_topo_plot_average(self, seizure_type: int, band: int) -> None:
         """
         Separate data into groups for an averaged topographic chart across ictal events
-        :param band: any of [delta, theta, alpha, beta]
         :param seizure_type: type of seizure
+        :param band: any of [delta, theta, alpha, beta]
         """
         features = self.raw_features
 
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         groups = []
@@ -117,7 +131,8 @@ class IntraUnivariateFeatureAnalyzer():
             groups.append([stage[3], group])
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"topo_time_average_{self.feature_name}_{seizure_type}_{band}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"topo_time_average_{self.feature_name}_{seizure_type}_{band}.png")
 
         if self.DATASET == "chb-mit":
             plot_topoplot_features_time(*tuple(groups), output_file, is_monopolar=False)
@@ -126,14 +141,14 @@ class IntraUnivariateFeatureAnalyzer():
 
     def univariate_topo_plot_individual(self, seizure_number: int, band: int) -> None:
         """
-        Separate data into groups for topographic chart for an ictal event
+        Separate data into groups for topographic chart for single ictal event
         :param seizure_number: index of the seizure
         :param band: any of [delta, theta, alpha, beta]
         """
         features = self.raw_features
         groups = []
         for stage in settings["intra_windows_categories"]:
-            group = features[(features.band == band) & 
+            group = features[(features.band == band) &
                              (features.seizure_number == seizure_number) &
                              (features.seizure_stage == stage[0]) & (features.time_point == stage[1])]
             logging.info(f"Seizure type = {group['seizure_type'].iloc[-1]}")
@@ -141,7 +156,8 @@ class IntraUnivariateFeatureAnalyzer():
 
         subject = groups[-1][-1]['patient'].iloc[-1]
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"topo_time_{subject}_{self.feature_name}_{band}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"topo_time_{subject}_{self.feature_name}_{band}.png")
 
         if self.DATASET == "chb-mit":
             plot_topoplot_features_time(*tuple(groups), output_file, is_monopolar=False)
@@ -156,14 +172,16 @@ class IntraUnivariateFeatureAnalyzer():
         """
         groups = []
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         channel_groups = self.univariate_channels_groups[zone]
         features = features[features.channel.isin(channel_groups)]
         for band in ["delta", "theta", "alpha", "beta", "all"]:
             for stage in settings["intra_windows_categories"]:
-                values = features[(features.band == band) & (features.seizure_stage == stage[0]) & (features.time_point == stage[1])]
+                values = features[(features.band == band) &
+                                  (features.seizure_stage == stage[0]) &
+                                  (features.time_point == stage[1])]
                 groups.append([band, stage[1], values.value])
 
         return groups
@@ -176,7 +194,7 @@ class IntraUnivariateFeatureAnalyzer():
         """
         groups = []
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
         channel_groups = self.univariate_channels_groups[zone]
         features = features[features.channel.isin(channel_groups)]
@@ -186,12 +204,12 @@ class IntraUnivariateFeatureAnalyzer():
             for unique_seizure in features.seizure_number.unique():
                 seizure_features = []
                 for stage in settings["intra_windows_categories"]:
-                    values = features[(features.band == band) & 
-                                      (features.seizure_stage == stage[0]) & 
+                    values = features[(features.band == band) &
+                                      (features.seizure_stage == stage[0]) &
                                       (features.time_point == stage[1]) &
                                       (features.seizure_number == unique_seizure)]
                     seizure_features.append(float(numpy.mean(values.value)))
-                
+
                 rank_array = [sorted(seizure_features).index(x) for x in seizure_features]
                 for idx, value in enumerate(rank_array):
                     rank_arrays[idx].append(value)
@@ -202,13 +220,12 @@ class IntraUnivariateFeatureAnalyzer():
 
     def processed_data_for_naive_bayes(self, seizure_type: str) -> list:
         """
-        Separate data into groups for friedman evaluation
-        :param zone: name of the brain zone
+        Separate data into groups for naive bayes training
         :param seizure_type: type of seizure
         """
         groups = []
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         for band in ["delta", "theta", "alpha", "beta", "all"]:
@@ -216,8 +233,8 @@ class IntraUnivariateFeatureAnalyzer():
             for stage in settings["intra_windows_categories"]:
                 single_group = []
                 for channel in self.channels:
-                    channel_values = features[(features.band == band) & 
-                                              (features.seizure_stage == stage[0]) & 
+                    channel_values = features[(features.band == band) &
+                                              (features.seizure_stage == stage[0]) &
                                               (features.time_point == stage[1]) &
                                               (features.channel == channel)]
                     channel_values = channel_values.value.tolist()
@@ -227,6 +244,7 @@ class IntraUnivariateFeatureAnalyzer():
 
         return groups
 
+
 class IntraUnivariateChbAnalyzer(IntraUnivariateFeatureAnalyzer):
 
     DATASET = "chb-mit"
@@ -234,19 +252,20 @@ class IntraUnivariateChbAnalyzer(IntraUnivariateFeatureAnalyzer):
     def __init__(self, feature: str):
         """
         :param feature: name of the feature file
-        :param feature_type: any of [univariate, bivariate]
         """
         super().__init__(feature)
 
     def hemisfere_bar_chart(self, hemisfere: str, seizure_type: str) -> None:
         """
         :param hemisfere: any of [left, right]
+        :param seizure_type: any of [unknown]
         """
         self.univariate_zone_bar_chart(hemisfere, seizure_type)
 
     def hemisfere_dist_chart(self, hemisfere: str, seizure_type: str) -> None:
         """
         :param hemisfere: any of [left, right]
+        :param seizure_type: any of [unknown]
         """
         self.univariate_zone_dist_chart(hemisfere, seizure_type)
 
@@ -258,19 +277,20 @@ class IntraUnivariateSienaAnalyzer(IntraUnivariateFeatureAnalyzer):
     def __init__(self, feature: str):
         """
         :param feature: name of the feature file
-        :param feature_type: any of [univariate, bivariate]
         """
         super().__init__(feature)
 
     def region_bar_chart(self, region: str, seizure_type: str) -> None:
         """
         :param region: any of [temporal, parietal, frontal, occipital]
+        :param seizure_type: any of [IAS]
         """
         self.univariate_zone_bar_chart(region, seizure_type)
-    
+
     def region_dist_chart(self, region: str, seizure_type: str) -> None:
         """
         :param region: any of [temporal, parietal, frontal, occipital]
+        :param seizure_type: any of [IAS]
         """
         self.univariate_zone_dist_chart(region, seizure_type)
 
@@ -282,19 +302,20 @@ class IntraUnivariateTuszAnalyzer(IntraUnivariateFeatureAnalyzer):
     def __init__(self, feature: str):
         """
         :param feature: name of the feature file
-        :param feature_type: any of [univariate, bivariate]
         """
         super().__init__(feature)
 
     def region_bar_chart(self, region: str, seizure_type: str) -> None:
         """
         :param region: any of [temporal, parietal, frontal, occipital]
+        :param seizure_type: any of [tnsz, cpsz, gnsz, fnsz]
         """
         self.univariate_zone_bar_chart(region, seizure_type)
 
     def region_dist_chart(self, region: str, seizure_type: str) -> None:
         """
         :param region: any of [temporal, parietal, frontal, occipital]
+        :param seizure_type: any of [tnsz, cpsz, gnsz, fnsz]
         """
         self.univariate_zone_dist_chart(region, seizure_type)
 
@@ -306,15 +327,13 @@ class IntraUnivariateTuepAnalyzer(IntraUnivariateFeatureAnalyzer):
     def __init__(self, feature: str):
         """
         :param feature: name of the feature file
-        :param feature_type: any of [univariate, bivariate]
         """
         super().__init__(feature)
 
-    def processed_data_for_lilliefors(self, zone: str) -> None:
+    def processed_data_for_lilliefors(self, zone: str) -> list:
         """
         Separate data into groups for normality evaluation
         :param zone: name of the brain zone
-        :param seizure_type: type of seizure
         """
         groups = []
         features = self.raw_features
@@ -365,17 +384,23 @@ class InterUnivariateFeatureAnalyzer():
 
         bands = []
         for band in ["delta", "theta", "alpha", "beta", "all"]:
-            preictal_band_array = preictal_features[preictal_features.band == band][["band", "feature", "value"]]
+            preictal_band_array = preictal_features[preictal_features.band == band][["band",
+                                                                                     "feature",
+                                                                                     "value"]]
             preictal_band_array["Group"] = "Preictal"
             ictal_band_array = ictal_features[ictal_features.band == band][["band", "feature", "value"]]
             ictal_band_array["Group"] = "Ictal"
             healthy_band_array = healthy_features[healthy_features.band == band][["band", "feature", "value"]]
             healthy_band_array["Group"] = "Healthy"
-            merged_band_array = pandas.concat([preictal_band_array, ictal_band_array, healthy_band_array],ignore_index=True)
+            merged_band_array = pandas.concat([preictal_band_array,
+                                               ictal_band_array,
+                                               healthy_band_array],
+                                              ignore_index=True)
             bands.append(merged_band_array)
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"bar_inter_{self.feature_name}_{zone}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"bar_inter_{self.feature_name}_{zone}.png")
         if self.feature_name != "power_spectral_density":
             plot_univariate_inter_bar_chart(*bands, output_file)
         else:
@@ -402,17 +427,22 @@ class InterUnivariateFeatureAnalyzer():
 
         bands = []
         for band in ["delta", "theta", "alpha", "beta", "all"]:
-            preictal_band_array = preictal_features[preictal_features.band == band][["band", "feature", "value"]]
+            preictal_band_array = preictal_features[preictal_features.band == band][["band",
+                                                                                     "feature",
+                                                                                     "value"]]
             preictal_band_array["Group"] = "Preictal"
             ictal_band_array = ictal_features[ictal_features.band == band][["band", "feature", "value"]]
             ictal_band_array["Group"] = "Ictal"
             healthy_band_array = healthy_features[healthy_features.band == band][["band", "feature", "value"]]
             healthy_band_array["Group"] = "Healthy"
-            merged_band_array = pandas.concat([preictal_band_array, ictal_band_array, healthy_band_array],ignore_index=True)
+            merged_band_array = pandas.concat([preictal_band_array,
+                                               ictal_band_array,
+                                               healthy_band_array], ignore_index=True)
             bands.append(merged_band_array)
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"dist_inter_{self.feature_name}_{zone}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"dist_inter_{self.feature_name}_{zone}.png")
         if self.feature_name != "power_spectral_density":
             plot_univariate_inter_dist_chart(*bands, output_file)
         else:
@@ -442,7 +472,7 @@ class InterUnivariateFeatureAnalyzer():
             preictal_band_array = preictal_features[preictal_features.band == band]["value"]
             ictal_band_array = ictal_features[ictal_features.band == band]["value"]
             healthy_band_array = healthy_features[healthy_features.band == band]["value"]
-                                  # Keep the order - preictal, ictal, healthy
+            # Keep the order - preictal, ictal, healthy
             groups.append([band, [preictal_band_array, ictal_band_array, healthy_band_array]])
 
         return groups
@@ -492,7 +522,7 @@ class MlUnivariateFeatureAnalyzer():
         :param seizure_type: type of seizure
         """
         accuracy_values = self.accuracy_values
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             accuracy_values = accuracy_values[accuracy_values.seizure_type == seizure_type]
 
         groups = []
@@ -503,7 +533,8 @@ class MlUnivariateFeatureAnalyzer():
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
         if self.dataset == "chb":
             self.dataset = "chb-mit"
-        output_file = os.path.join(base_path, "images", self.dataset, f"ml_inter_{seizure_type}_{self.feature_name}.png")
+        output_file = os.path.join(base_path, "images", self.dataset,
+                                   f"ml_inter_{seizure_type}_{self.feature_name}.png")
         if self.feature_name != "power_spectral_density":
             plot_univariate_ml_bar_chart(*groups, output_file)
         else:
@@ -536,12 +567,12 @@ class IntraBivariateFeatureAnalyzer():
 
     def bivariate_zone_bar_chart(self, zone: str, seizure_type: str) -> None:
         """
-        Separate data into groups for bar evaluation
+        Separate data into groups and plot bar chart
         :param region: name of the brain zone
         :param seizure_type: type of seizure
         """
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         selected_channels = []
@@ -553,7 +584,8 @@ class IntraBivariateFeatureAnalyzer():
         features = features[features.channels.isin(selected_channels)]
 
         for stage in settings["intra_windows_categories"]:
-                features.loc[((features.time_point == stage[1]) & (features.seizure_stage == stage[0])), "time_point"] = stage[3]
+            features.loc[((features.time_point == stage[1]) &
+                          (features.seizure_stage == stage[0])), "time_point"] = stage[3]
 
         delta_features = features[features.band == "delta"]
         theta_features = features[features.band == "theta"]
@@ -562,20 +594,23 @@ class IntraBivariateFeatureAnalyzer():
         all_features = features[features.band == "all"]
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"bar_intra_{self.feature_name}_{zone}_{seizure_type}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"bar_intra_{self.feature_name}_{zone}_{seizure_type}.png")
         if self.feature_name != "power_spectral_density":
-            plot_univariate_intra_bar_chart(delta_features, theta_features, alpha_features, beta_features, all_features, output_file)
+            plot_univariate_intra_bar_chart(delta_features, theta_features, alpha_features,
+                                            beta_features, all_features, output_file)
         else:
-            plot_univariate_intra_bar_chart_psd(delta_features, theta_features, alpha_features, beta_features, output_file)
+            plot_univariate_intra_bar_chart_psd(delta_features, theta_features, alpha_features,
+                                                beta_features, output_file)
 
     def bivariate_zone_dist_chart(self, zone: str, seizure_type: str) -> None:
         """
-        Separate data into groups for distribution chart
+        Separate data into groups and plot KDE chart
         :param region: name of the brain zone
         :param seizure_type: type of seizure
         """
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         selected_channels = []
@@ -587,7 +622,8 @@ class IntraBivariateFeatureAnalyzer():
 
         features["Time point"] = "unknown"
         for stage in settings["intra_windows_categories"]:
-                features.loc[((features.time_point == stage[1]) & (features.seizure_stage == stage[0])), "Time point"] = stage[3]
+            features.loc[((features.time_point == stage[1]) &
+                          (features.seizure_stage == stage[0])), "Time point"] = stage[3]
 
         delta_features = features[features.band == "delta"]
         theta_features = features[features.band == "theta"]
@@ -596,21 +632,23 @@ class IntraBivariateFeatureAnalyzer():
         all_features = features[features.band == "all"]
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"dist_intra_{self.feature_name}_{zone}_{seizure_type}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"dist_intra_{self.feature_name}_{zone}_{seizure_type}.png")
         if self.feature_name != "power_spectral_density":
-            plot_univariate_intra_dist_chart(delta_features, theta_features, alpha_features, beta_features, all_features, output_file)
+            plot_univariate_intra_dist_chart(delta_features, theta_features, alpha_features,
+                                             beta_features, all_features, output_file)
         else:
-            plot_univariate_intra_dist_chart_psd(delta_features, theta_features, alpha_features, beta_features, output_file)
+            plot_univariate_intra_dist_chart_psd(delta_features, theta_features, alpha_features,
+                                                 beta_features, output_file)
 
     def processed_data_for_naive_bayes(self, seizure_type: str) -> list:
         """
-        Separate data into groups for friedman evaluation
-        :param zone: name of the brain zone
+        Separate data into groups for naive bayes training
         :param seizure_type: type of seizure
         """
         groups = []
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         for band in ["delta", "theta", "alpha", "beta", "all"]:
@@ -618,8 +656,8 @@ class IntraBivariateFeatureAnalyzer():
             for stage in settings["intra_windows_categories"]:
                 single_group = []
                 logging.info(f"Filtering group = {band}, {stage}")
-                group_features = features[(features.band == band) & 
-                                          (features.seizure_stage == stage[0]) & 
+                group_features = features[(features.band == band) &
+                                          (features.seizure_stage == stage[0]) &
                                           (features.time_point == stage[1])]
 
                 for channel_1 in self.channels:
@@ -628,7 +666,7 @@ class IntraBivariateFeatureAnalyzer():
                         channel_values = group_features[group_features.channels == channels]
                         if not len(channel_values):
                             continue
-                        
+
                         channel_values = channel_values.value.tolist()
                         single_group.append(channel_values)
 
@@ -640,12 +678,12 @@ class IntraBivariateFeatureAnalyzer():
     def bivariate_network_plot_average(self, seizure_type: int, band: int) -> None:
         """
         Separate data into groups for an averaged network chart across ictal events
-        :param band: any of [delta, theta, alpha, beta]
         :param seizure_type: type of seizure
+        :param band: any of [delta, theta, alpha, beta]
         """
         features = self.raw_features
 
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         networks = []
@@ -653,7 +691,7 @@ class IntraBivariateFeatureAnalyzer():
         averages = sqldf(f"""SELECT channels, AVG(value) as value FROM features
                              WHERE band='{band}'
                              GROUP BY channels, seizure_stage, time_point""")
-        maximum =  averages.value.max() 
+        maximum = averages.value.max()
 
         for stage in settings["intra_windows_categories"]:
             group = sqldf(f"""SELECT channels, AVG(value) as value FROM features
@@ -678,7 +716,8 @@ class IntraBivariateFeatureAnalyzer():
             networks.append([stage[3], network])
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"network_avg_{self.feature_name}_{seizure_type}_{band}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"network_avg_{self.feature_name}_{seizure_type}_{band}.png")
 
         if self.DATASET == "chb-mit":
             plot_network_features_time(*tuple(networks), line_widths, output_file, is_monopolar=False)
@@ -687,20 +726,20 @@ class IntraBivariateFeatureAnalyzer():
 
     def bivariate_network_plot_individual(self, seizure_number: int, band: int) -> None:
         """
-        Separate data into groups for network chart for an ictal event
+        Separate data into groups for network chart for single ictal event
         :param seizure_number: index of the seizure
         :param band: any of [delta, theta, alpha, beta]
         """
         features = self.raw_features
         networks = []
         threshold = features.value.median() * 1.5
-        maximum = features[features.band == band].value.max() 
-        
+        maximum = features[features.band == band].value.max()
+
         for stage in settings["intra_windows_categories"]:
-            group = features[(features.band == band) & 
+            group = features[(features.band == band) &
                              (features.seizure_number == seizure_number) &
                              (features.seizure_stage == stage[0]) & (features.time_point == stage[1])]
-            
+
             network = networkx.Graph()
             line_widths = []
             for channel_1 in self.channels:
@@ -717,7 +756,8 @@ class IntraBivariateFeatureAnalyzer():
 
         subject = features.patient.tolist()[0]
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"network_{subject}_{self.feature_name}_{band}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"network_{subject}_{self.feature_name}_{band}.png")
 
         if self.DATASET == "chb-mit":
             plot_network_features_time(*tuple(networks), line_widths, output_file, is_monopolar=False)
@@ -732,7 +772,7 @@ class IntraBivariateFeatureAnalyzer():
         """
         groups = []
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         selected_channels = []
@@ -748,12 +788,12 @@ class IntraBivariateFeatureAnalyzer():
             for unique_seizure in features.seizure_number.unique():
                 seizure_features = []
                 for stage in settings["intra_windows_categories"]:
-                    values = features[(features.band == band) & 
-                                      (features.seizure_stage == stage[0]) & 
+                    values = features[(features.band == band) &
+                                      (features.seizure_stage == stage[0]) &
                                       (features.time_point == stage[1]) &
                                       (features.seizure_number == unique_seizure)]
                     seizure_features.append(float(numpy.mean(values.value)))
-                
+
                 rank_array = [sorted(seizure_features).index(x) for x in seizure_features]
                 for idx, value in enumerate(rank_array):
                     rank_arrays[idx].append(value)
@@ -762,46 +802,16 @@ class IntraBivariateFeatureAnalyzer():
 
         return groups
 
-    def processed_data_for_graph(self, zone: str, seizure_type: str) -> None:
+    def processed_data_for_efficiency(self, seizure_type: str, threshold: float) -> Generator[tuple]:
         """
-        Separate data into groups for graph analysis
-        :param zone: name of the brain zone
-        :param seizure_type: type of seizure
-        """
-        features = self.raw_features
-        if seizure_type is not "unknown":
-            features = features[features.seizure_type == seizure_type]
-
-        selected_channels = []
-
-        if zone is not "all_channels":
-            channels = self.univariate_channels_groups[zone]
-            for channel_1 in channels:
-                for channel_2 in channels:
-                    selected_channels.append(f"{channel_1}_{channel_2}")
-            features = features[features.channels.isin(selected_channels)]
-
-        for stage in settings["intra_windows_categories"]:
-                features.loc[((features.time_point == stage[1]) & (features.seizure_stage == stage[0])), "time_point"] = stage[3]
-
-        delta_features = features[features.band == "delta"]
-        theta_features = features[features.band == "theta"]
-        alpha_features = features[features.band == "alpha"]
-        beta_features = features[features.band == "beta"]
-        all_features = features[features.band == "all"]
-
-        return delta_features, theta_features, alpha_features, beta_features, all_features
-    
-    def processed_data_for_efficiency(self, seizure_type: str, threshold: float):
-        """
-        Compute adjacency matrices
-        :param zone: name of the brain zone
+        Compute adjacency matrices for efficiency analysis
         :param seizure_type: type of seizure
         :param threshold: if connection weight is under 'threshold',
-                          connection weight is set to 0
+                          connection weight is set to 0,
+                          otherwise it is set to 1
         """
         features = self.raw_features
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         for band in ["delta", "theta", "alpha", "beta", "all"]:
@@ -813,7 +823,7 @@ class IntraBivariateFeatureAnalyzer():
                                                    (features.band == band) &
                                                    (features.time_point == stage[1]) &
                                                    (features.seizure_stage == stage[0])]
-                    
+
                     undirected_graph = []
                     unique_channels = set()
 
@@ -834,17 +844,18 @@ class IntraBivariateFeatureAnalyzer():
 
     def network_stripplot_chart(self, seizure_type: str) -> None:
         """
-        Separate efficiency data into groups for striplot chart
+        Separate efficiency data into groups and plot striplot chart
         :param seizure_type: type of seizure
         """
         features = self.raw_features
 
-        if seizure_type is not "unknown":
+        if seizure_type != "unknown":
             features = features[features.seizure_type == seizure_type]
 
         features["Time point"] = "unknown"
         for stage in settings["intra_windows_categories"]:
-                features.loc[((features.time_point == stage[1]) & (features.seizure_stage == stage[0])), "Time point"] = stage[3]
+            features.loc[((features.time_point == stage[1]) &
+                          (features.seizure_stage == stage[0])), "Time point"] = stage[3]
 
         delta_features = features[features.band == "delta"]
         theta_features = features[features.band == "theta"]
@@ -852,13 +863,13 @@ class IntraBivariateFeatureAnalyzer():
         beta_features = features[features.band == "beta"]
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"scatter_{self.feature_name}_{seizure_type}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"scatter_{self.feature_name}_{seizure_type}.png")
         plot_graph_striplot_chart(delta_features, theta_features, alpha_features, beta_features, output_file)
-      
 
     def network_lineplot_chart(self, seizure_list: list) -> None:
         """
-        Separate efficiency data into single evetns for lineplot chart
+        Separate efficiency data into single evetns and plot lineplot chart
         :param seizure_type: type of seizure
         """
         features = self.raw_features
@@ -867,7 +878,8 @@ class IntraBivariateFeatureAnalyzer():
 
         features["Time point"] = "unknown"
         for stage in settings["intra_windows_categories"]:
-                features.loc[((features.time_point == stage[1]) & (features.seizure_stage == stage[0])), "Time point"] = stage[3]
+            features.loc[((features.time_point == stage[1]) &
+                          (features.seizure_stage == stage[0])), "Time point"] = stage[3]
 
         minimum = features.value.max()
         maximum = features.value.min()
@@ -877,9 +889,11 @@ class IntraBivariateFeatureAnalyzer():
         beta_features = features[features.band == "beta"]
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"lineplot_{self.feature_name}_individual.png")
-        plot_graph_pointplot_chart(delta_features, theta_features, alpha_features, beta_features, [maximum, minimum], output_file)
-      
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"lineplot_{self.feature_name}_individual.png")
+        plot_graph_pointplot_chart(delta_features, theta_features, alpha_features,
+                                   beta_features, [maximum, minimum], output_file)
+
 
 class IntraBivariateChbAnalyzer(IntraBivariateFeatureAnalyzer):
 
@@ -900,7 +914,6 @@ class IntraBivariateSienaAnalyzer(IntraBivariateFeatureAnalyzer):
     def __init__(self, feature: str):
         """
         :param feature: name of the feature file
-        :param feature_type: any of [univariate, bivariate]
         """
         super().__init__(feature)
 
@@ -912,7 +925,6 @@ class IntraBivariateTuszAnalyzer(IntraBivariateFeatureAnalyzer):
     def __init__(self, feature: str):
         """
         :param feature: name of the feature file
-        :param feature_type: any of [univariate, bivariate]
         """
         super().__init__(feature)
 
@@ -935,8 +947,8 @@ class InterBivariateFeatureAnalyzer():
 
     def bivariate_zone_bar_chart(self, zone: str) -> None:
         """
-        Separate data into groups for bar evaluation
-        :param region: name of the brain zone
+        Separate data into groups and plot bar chart
+        :param zone: name of the brain zone
         """
         selected_channels = []
         for channel_1 in self.univariate_channels_groups[zone]:
@@ -956,23 +968,28 @@ class InterBivariateFeatureAnalyzer():
 
         bands = []
         for band in ["delta", "theta", "alpha", "beta", "all"]:
-            preictal_band_array = preictal_features[preictal_features.band == band][["band", "feature", "value"]]
+            preictal_band_array = preictal_features[preictal_features.band == band][["band",
+                                                                                     "feature",
+                                                                                     "value"]]
             preictal_band_array["Group"] = "Preictal"
             ictal_band_array = ictal_features[ictal_features.band == band][["band", "feature", "value"]]
             ictal_band_array["Group"] = "Ictal"
             healthy_band_array = healthy_features[healthy_features.band == band][["band", "feature", "value"]]
             healthy_band_array["Group"] = "Healthy"
-            merged_band_array = pandas.concat([preictal_band_array, ictal_band_array, healthy_band_array],ignore_index=True)
+            merged_band_array = pandas.concat([preictal_band_array,
+                                               ictal_band_array,
+                                               healthy_band_array], ignore_index=True)
             bands.append(merged_band_array)
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"bar_inter_{self.feature_name}_{zone}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"bar_inter_{self.feature_name}_{zone}.png")
         plot_univariate_inter_bar_chart(*bands, output_file)
 
     def bivariate_zone_violin_chart(self, zone: str) -> None:
         """
-        Separate data into groups for distribution chart
-        :param region: name of the brain zone
+        Separate data into groups and plot distribution chart
+        :param zone: name of the brain zone
         """
         selected_channels = []
         for channel_1 in self.univariate_channels_groups[zone]:
@@ -992,19 +1009,24 @@ class InterBivariateFeatureAnalyzer():
 
         bands = []
         for band in ["delta", "theta", "alpha", "beta", "all"]:
-            preictal_band_array = preictal_features[preictal_features.band == band][["band", "feature", "value"]]
+            preictal_band_array = preictal_features[preictal_features.band == band][["band",
+                                                                                     "feature",
+                                                                                     "value"]]
             preictal_band_array["Group"] = "Preictal"
             ictal_band_array = ictal_features[ictal_features.band == band][["band", "feature", "value"]]
             ictal_band_array["Group"] = "Ictal"
             healthy_band_array = healthy_features[healthy_features.band == band][["band", "feature", "value"]]
             healthy_band_array["Group"] = "Healthy"
-            merged_band_array = pandas.concat([preictal_band_array, ictal_band_array, healthy_band_array],ignore_index=True)
+            merged_band_array = pandas.concat([preictal_band_array,
+                                               ictal_band_array,
+                                               healthy_band_array], ignore_index=True)
             bands.append(merged_band_array)
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
-        output_file = os.path.join(base_path, "images", self.DATASET, f"dist_inter_{self.feature_name}_{zone}.png")
+        output_file = os.path.join(base_path, "images", self.DATASET,
+                                   f"dist_inter_{self.feature_name}_{zone}.png")
         plot_univariate_inter_dist_chart(*bands, output_file)
-       
+
     def processed_data_for_kruskal_wallis(self, zone: str) -> list:
         """
         Separate data into groups for kruskal evaluation
@@ -1032,7 +1054,7 @@ class InterBivariateFeatureAnalyzer():
             preictal_band_array = preictal_features[preictal_features.band == band]["value"]
             ictal_band_array = ictal_features[ictal_features.band == band]["value"]
             healthy_band_array = healthy_features[healthy_features.band == band]["value"]
-                                  # Keep the order - preictal, ictal, healthy
+            # Keep the order - preictal, ictal, healthy
             groups.append([band, [preictal_band_array, ictal_band_array, healthy_band_array]])
 
         return groups
@@ -1045,7 +1067,6 @@ class InterBivariateSienaAnalyzer(InterBivariateFeatureAnalyzer):
     def __init__(self, feature: str):
         """
         :param feature: name of the feature file
-        :param feature_type: any of [univariate, bivariate]
         """
         super().__init__(feature)
 
@@ -1057,6 +1078,5 @@ class InterBivariateTuszAnalyzer(InterBivariateFeatureAnalyzer):
     def __init__(self, feature: str):
         """
         :param feature: name of the feature file
-        :param feature_type: any of [univariate, bivariate]
         """
         super().__init__(feature)

@@ -33,10 +33,12 @@ def main():
             eeg_array = windows[int(window_number), :, :]
 
             if FEATURE == "coherence":
-                logging.info(f"Processing instance")
-                delta, theta, alpha, beta, all = feature_estimator(FEATURE, eeg_array, metadata["sampling_frequency"])
-                
-                for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"], [delta, theta, alpha, beta, all]):
+                logging.info("Processing instance")
+                delta, theta, alpha, beta, all = feature_estimator(FEATURE, eeg_array,
+                                                                   metadata["sampling_frequency"])
+
+                for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"],
+                                           [delta, theta, alpha, beta, all]):
                     logging.info(f"Processing band = {band_name}")
                     feature_counter = 0
                     for i in range(len(metadata["channels"])):
@@ -44,21 +46,22 @@ def main():
                             if i == j:
                                 continue
                             feature_list.append({"patient": metadata["patient"],
-                                                    "band": band_name,
-                                                    "seizure_type": metadata["seizure_type"],
-                                                    "channels": f"{metadata['channels'][i]}_{metadata['channels'][j]}",
-                                                    "index_channels": f"{i}_{j}",
-                                                    "seizure_stage": seizure_stage[0],
-                                                    "time_point": seizure_stage[1],
-                                                    "feature": FEATURE,
-                                                    "seizure_number": counter,
-                                                    "value": band[feature_counter]})
+                                                 "band": band_name,
+                                                 "seizure_type": metadata["seizure_type"],
+                                                 "channels": f"{metadata['channels'][i]}_{metadata['channels'][j]}",
+                                                 "index_channels": f"{i}_{j}",
+                                                 "seizure_stage": seizure_stage[0],
+                                                 "time_point": seizure_stage[1],
+                                                 "feature": FEATURE,
+                                                 "seizure_number": counter,
+                                                 "value": band[feature_counter]})
                             feature_counter += 1
             else:
                 delta, theta, alpha, beta = BandEstimator.get_eeg_bands(eeg_array,
                                                                         metadata["sampling_frequency"])
-                
-                for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"], [delta, theta, alpha, beta, eeg_array]):
+
+                for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"],
+                                           [delta, theta, alpha, beta, eeg_array]):
                     logging.info(f"Processing band = {band_name}")
 
                     feature_value = feature_estimator(FEATURE, band, metadata["sampling_frequency"])
@@ -69,15 +72,15 @@ def main():
                             if i == j:
                                 continue
                             feature_list.append({"patient": metadata["patient"],
-                                                "band": band_name,
-                                                "seizure_type": metadata["seizure_type"],
-                                                "channels": f"{metadata['channels'][i]}_{metadata['channels'][j]}",
-                                                "index_channels": f"{i}_{j}",
-                                                "seizure_stage": seizure_stage[0],
-                                                "time_point": seizure_stage[1],
-                                                "feature": FEATURE,
-                                                "seizure_number": counter,
-                                                "value": feature_value[feature_counter]})
+                                                 "band": band_name,
+                                                 "seizure_type": metadata["seizure_type"],
+                                                 "channels": f"{metadata['channels'][i]}_{metadata['channels'][j]}",
+                                                 "index_channels": f"{i}_{j}",
+                                                 "seizure_stage": seizure_stage[0],
+                                                 "time_point": seizure_stage[1],
+                                                 "feature": FEATURE,
+                                                 "seizure_number": counter,
+                                                 "value": feature_value[feature_counter]})
                             feature_counter += 1
 
     feature_df = pandas.DataFrame(feature_list)

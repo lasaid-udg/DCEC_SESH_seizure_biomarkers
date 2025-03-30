@@ -18,13 +18,13 @@ OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 def main():
     slices_siena = EegSlicesSiena()
     global_metadata = slices_siena.metadata
-    
+
     for patient, patient_metadata in global_metadata.items():
         logging.info(f"Processing patient = {patient}")
         for seizure_number in range(len(patient_metadata)):
-            logging.info(f"Processing eeg slice")
+            logging.info("Processing eeg slice")
             seizure_metadata, eeg_slice = slices_siena.get(patient, seizure_number)
-       
+
             ###########################################################
             eog_denoiser = EogDenoiser(seizure_metadata["sampling_frequency"])
             _, eeg_slice = eog_denoiser.apply_by_segments(eeg_slice)

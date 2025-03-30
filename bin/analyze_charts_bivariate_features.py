@@ -12,8 +12,9 @@ from docopt import docopt
 warnings.filterwarnings("ignore")
 sys.path.append("../")
 from lib import settings
-from lib.analyzers import IntraBivariateChbAnalyzer, IntraBivariateSienaAnalyzer, IntraBivariateTuszAnalyzer, \
-                          InterBivariateSienaAnalyzer, InterBivariateTuszAnalyzer, MlUnivariateFeatureAnalyzer
+from lib.analyzers import IntraBivariateChbAnalyzer, IntraBivariateSienaAnalyzer, \
+                          IntraBivariateTuszAnalyzer, InterBivariateSienaAnalyzer, \
+                          InterBivariateTuszAnalyzer, MlUnivariateFeatureAnalyzer
 
 
 FEATURE = docopt(__doc__)["--feature"]
@@ -72,7 +73,6 @@ def main():
     ml_analyzer = MlUnivariateFeatureAnalyzer("chb", FEATURE)
     ml_analyzer.ml_bar_chart("unknown")
     time.sleep(3)
-
 
     logging.info("Processing database Siena")
 

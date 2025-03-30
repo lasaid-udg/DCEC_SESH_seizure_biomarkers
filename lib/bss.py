@@ -6,6 +6,7 @@ from . import settings
 
 
 class IWasobi():
+
     def __init__(self, ar_order=10, rmax=0.99, eps0=5.0e-7):
         self.ar_order = ar_order
         self.rmax = rmax
@@ -30,7 +31,7 @@ class IWasobi():
         for idx in range(1, self.ar_order + 1):
             idk = channels * idx
             sub_matrix = correlation_matrix[:, idk: idk + channels]
-            correlation_matrix[:, idk: idk + channels] = 0.5*(sub_matrix + numpy.transpose(sub_matrix))
+            correlation_matrix[:, idk: idk + channels] = 0.5 * (sub_matrix + numpy.transpose(sub_matrix))
 
         winit, ms = self.approximate_joint_diag_uniform(correlation_matrix, 20)
 
@@ -56,7 +57,7 @@ class IWasobi():
         number_channels = signal_array.shape[0]
         correlation_matrix = numpy.zeros((number_channels, (ar_order + 1) * number_channels))
 
-        for idx in range(ar_order+1):
+        for idx in range(ar_order + 1):
             i = number_channels * (idx)
             normalization_factor = 1 / numpy.float64(ar_samples)
             signal = signal_array[:, :ar_samples]
@@ -73,14 +74,14 @@ class IWasobi():
         :param max_iterations: Maximum iterations for the approximation
         """
         number_channels, number_comparisons = matrices.shape
-        comparisons_per_channel = numpy.int32(numpy.floor(number_comparisons/numpy.float64(number_channels)))
+        comparisons_per_channel = numpy.int32(numpy.floor(number_comparisons / numpy.float64(number_channels)))
         iteration = 0
         epsilon = 1e-7
         improve = 10
 
         eigenvalues, eigenvectors = numpy.linalg.eig(matrices[:, :number_channels])
         eigenvectors = numpy.real_if_close(eigenvectors, tol=100)
-        w_est = numpy.dot(numpy.diag(1.0/numpy.sqrt(eigenvalues)), numpy.transpose(eigenvectors))
+        w_est = numpy.dot(numpy.diag(1.0 / numpy.sqrt(eigenvalues)), numpy.transpose(eigenvectors))
 
         ms = matrices.copy()
         rs = numpy.zeros((number_channels, comparisons_per_channel))
@@ -113,27 +114,27 @@ class IWasobi():
             c2 = numpy.hstack(c2)
             c1 = numpy.hstack(c1)
 
-            det0 = b11*b22-b12**2
-            d1 = (c1*b22-b12*c2)/det0
-            d2 = (b11*c2-b12*c1)/det0
+            det0 = b11 * b22 - b12 ** 2
+            d1 = (c1 * b22 - b12 * c2) / det0
+            d2 = (b11 * c2 - b12 * c1) / det0
 
             m = 0
             a0 = numpy.eye(number_channels)
 
             for id in range(1, number_channels):
-                a0[id, 0:id] = d1[m:m+id]
-                a0[0:id, id] = d2[m:m+id]
+                a0[id, 0:id] = d1[m:m + id]
+                a0[0:id, id] = d2[m:m + id]
                 m += id
 
             a_inv = numpy.linalg.inv(a0)
             w_est = numpy.dot(a_inv, w_est)
             r_aux = numpy.dot(numpy.dot(w_est, matrices[:, :number_channels]), w_est.T)
-            aux = 1/numpy.sqrt(numpy.diag(r_aux))
+            aux = 1 / numpy.sqrt(numpy.diag(r_aux))
             w_est = numpy.dot(numpy.diag(aux), w_est)
 
             for k in range(comparisons_per_channel):
-                ini = k*number_channels
-                ms[:, ini:ini+number_channels] = numpy.dot(numpy.dot(w_est, matrices[:, ini:ini+number_channels]), w_est.T)
+                ini = k * number_channels
+                ms[:, ini:ini + number_channels] = numpy.dot(numpy.dot(w_est, matrices[:, ini:ini + number_channels]), w_est.T)
                 rs[:, k] = numpy.diag(ms[:, ini:ini + number_channels])
 
             critic = (ms**2).sum() - (rs**2).sum()
@@ -145,17 +146,17 @@ class IWasobi():
 
     def weights(self, ms, rmax, eps0) -> numpy.array:
         number_channels, number_comparisons = ms.shape
-        comparisons_per_channel = numpy.int32(numpy.floor(number_comparisons/numpy.float64(number_channels)))
-        d2 = numpy.int32(number_channels * (number_channels - 1)/2.0)
+        comparisons_per_channel = numpy.int32(numpy.floor(number_comparisons / numpy.float64(number_channels)))
+        d2 = numpy.int32(number_channels * (number_channels - 1) / 2.0)
         r = numpy.zeros((comparisons_per_channel, number_channels))
 
         for index in range(comparisons_per_channel):
             id = index * number_channels
-            r[index, :] = numpy.diag(ms[:, id:id+number_channels])
+            r[index, :] = numpy.diag(ms[:, id:id + number_channels])
 
         arc, sigmy = self.armodel(r, rmax)
 
-        ar3 = numpy.zeros((2*comparisons_per_channel-1, d2))
+        ar3 = numpy.zeros((2 * comparisons_per_channel - 1, d2))
         ll = 0
         for i in range(1, number_channels):
             for k in range(i):
@@ -163,14 +164,14 @@ class IWasobi():
                 ll += 1
 
         phi = self.ar2r(ar3)
-        h = self.th_inv5(phi, comparisons_per_channel, d2, eps0*phi[0, :])
+        h = self.th_inv5(phi, comparisons_per_channel, d2, eps0 * phi[0, :])
 
         im = 0
         for i in range(1, number_channels):
             for k in range(i):
-                fact = 1/(sigmy[i]*sigmy[k])
-                imm = im*comparisons_per_channel
-                h[:, imm:imm+comparisons_per_channel] = h[:, imm:imm+comparisons_per_channel]*fact
+                fact = 1 / (sigmy[i] * sigmy[k])
+                imm = im * comparisons_per_channel
+                h[:, imm:imm + comparisons_per_channel] = h[:, imm:imm + comparisons_per_channel] * fact
                 im += 1
 
         return h
@@ -184,20 +185,20 @@ class IWasobi():
         ar = numpy.zeros((m, d))
 
         for id in range(d):
-            ar[:, id] = numpy.r_[1, numpy.linalg.lstsq(-scipy.linalg.toeplitz(r[:m-1, id], r[:m-1, id].T),
+            ar[:, id] = numpy.r_[1, numpy.linalg.lstsq(-scipy.linalg.toeplitz(r[:m - 1, id], r[:m - 1, id].T),
                                                        r[1:m, id])[0]]
             v = numpy.roots(ar[:, id])
-            vs = 0.5*(numpy.sign(numpy.abs(v)-1)+1)
-            v = (1-vs)*v + vs/numpy.conj(v)
+            vs = 0.5 * (numpy.sign(numpy.abs(v) - 1) + 1)
+            v = (1 - vs) * v + vs / numpy.conj(v)
             vmax = numpy.max(numpy.abs(v))
 
             if vmax > rmax:
-                v = v*rmax/vmax
+                v = v * rmax / vmax
 
             ar[:, id] = numpy.real(numpy.poly(v).T)
 
         rs = self.ar2r(ar)
-        sigmy = r[0, :]/rs[0, :]
+        sigmy = r[0, :] / rs[0, :]
         return ar, sigmy
 
     def ar2r(self, a):
@@ -215,23 +216,23 @@ class IWasobi():
         p -= 1
 
         for n in range(p)[::-1]:
-            k_matrix[n, :] = -a[n+1, :]
+            k_matrix[n, :] = -a[n + 1, :]
             for k in range(n):
-                alfa[k+1, :] = (a[k+1, :] + k_matrix[n, :]*a[n-k, :])/(1-k_matrix[n, :]**2)
+                alfa[k + 1, :] = (a[k + 1, :] + k_matrix[n, :] * a[n - k, :]) / (1 - k_matrix[n, :] ** 2)
             a = alfa.copy()
 
-        r = numpy.zeros((p+1, m))
-        r[0, :] = 1/numpy.prod(1-k_matrix**2, 0)
+        r = numpy.zeros((p + 1, m))
+        r[0, :] = 1 / numpy.prod(1 - k_matrix ** 2, 0)
         f = r.copy()
         b = f.copy()
 
         for k in range(p):
-            for n in range(k+1)[::-1]:
+            for n in range(k + 1)[::-1]:
                 k_n = k_matrix[n, :]
-                f[n, :] = f[n+1, :] + k_n*b[k-n, :]
-                b[k-n, :] = -k_n*f[n+1, :]+(1-k_n**2)*b[k-n, :]
-            b[k+1, :] = f[0, :]
-            r[k+1, :] = f[0, :]
+                f[n, :] = f[n + 1, :] + k_n * b[k - n, :]
+                b[k - n, :] = -k_n * f[n + 1, :] + (1 - k_n ** 2) * b[k - n, :]
+            b[k + 1, :] = f[0, :]
+            r[k + 1, :] = f[0, :]
 
         return r
 
@@ -243,8 +244,8 @@ class IWasobi():
         c = []
         for im in range(m):
             a = (scipy.linalg.toeplitz(phi[:k_matrix, im], phi[:k_matrix, im].T) +
-                 scipy.linalg.hankel(phi[:k_matrix, im], phi[k_matrix-1:2*k_matrix, im].T) +
-                 eps[im]*numpy.eye(k_matrix))
+                 scipy.linalg.hankel(phi[:k_matrix, im], phi[k_matrix - 1:2 * k_matrix, im].T) +
+                 eps[im] * numpy.eye(k_matrix))
             c.append(numpy.linalg.inv(a))
 
         return numpy.concatenate(c, axis=1)
@@ -261,14 +262,14 @@ class IWasobi():
         :returns ms: diagonalized matrices composed of w_est * m_k * w_est'
         """
         d, md = m_matrix.shape
-        l_vector = numpy.int32(numpy.floor(md/numpy.float64(d)))
-        dd2 = numpy.int32(d*(d-1)/2.0)
-        md = l_vector*d
+        l_vector = numpy.int32(numpy.floor(md / numpy.float64(d)))
+        dd2 = numpy.int32(d * (d - 1) / 2.0)
+        md = l_vector * d
 
         if w_est0 is None:
             e, h = numpy.linalg.eig(m_matrix[:, :d])
             h = numpy.real_if_close(h, tol=100)
-            w_est = numpy.dot(numpy.diag(1/numpy.sqrt(e)), h.T)
+            w_est = numpy.dot(numpy.diag(1 / numpy.sqrt(e)), h.T)
         else:
             w_est = w_est0
 
@@ -276,10 +277,10 @@ class IWasobi():
         rs = numpy.zeros((d, l_vector))
 
         for k in range(l_vector):
-            ini = k*d
-            m_matrix[:, ini:ini+d] = 0.5*(m_matrix[:, ini:ini+d]+m_matrix[:, ini:ini+d].T)
-            ms[:, ini:ini+d] = numpy.dot(numpy.dot(w_est, m_matrix[:, ini:ini+d]), w_est.T)
-            rs[:, k] = numpy.diag(ms[:, ini:ini+d])
+            ini = k * d
+            m_matrix[:, ini:ini + d] = 0.5 * (m_matrix[:, ini:ini + d] + m_matrix[:, ini:ini + d].T)
+            ms[:, ini:ini + d] = numpy.dot(numpy.dot(w_est, m_matrix[:, ini:ini + d]), w_est.T)
+            rs[:, k] = numpy.diag(ms[:, ini:ini + d])
 
         for _ in range(maxnumit):
             b11 = numpy.zeros((dd2, 1))
@@ -291,8 +292,8 @@ class IWasobi():
 
             for id in range(1, d):
                 for id2 in range(id):
-                    im = m*l_vector
-                    wm = h[:, im:im+l_vector]
+                    im = m * l_vector
+                    wm = h[:, im:im + l_vector]
                     yim = ms[id, id2:md:d]
                     rs_id = rs[id, :]
                     rs_id2 = rs[id2, :]
@@ -305,27 +306,27 @@ class IWasobi():
                     c2[m] = numpy.dot(wlam1.T, yim.T)
                     m += 1
 
-            det0 = b11*b22-b12**2
-            d1 = (c1*b22-b12*c2)/det0
-            d2 = (b11*c2-b12*c1)/det0
+            det0 = b11 * b22 - b12 ** 2
+            d1 = (c1 * b22 - b12 * c2) / det0
+            d2 = (b11 * c2 - b12 * c1) / det0
             m = 0
             a0 = numpy.eye(d)
 
             for id in range(1, d):
-                a0[id, 0:id] = d1[m:m+id, 0]
-                a0[0:id, id] = d2[m:m+id, 0]
+                a0[id, 0:id] = d1[m:m + id, 0]
+                a0[0:id, id] = d2[m:m + id, 0]
                 m += id
 
             a_inv = numpy.linalg.inv(a0)
             w_est = numpy.dot(a_inv, w_est)
             r_aux = numpy.dot(numpy.dot(w_est, m_matrix[:, :d]), w_est.T)
-            aux = 1/numpy.sqrt(numpy.diag(r_aux))
+            aux = 1 / numpy.sqrt(numpy.diag(r_aux))
             w_est = numpy.dot(numpy.diag(aux), w_est)
 
             for k in range(l_vector):
-                ini = k*d
-                ms[:, ini:ini+d] = numpy.dot(numpy.dot(w_est, m_matrix[:, ini:ini+d]), w_est.T)
-                rs[:, k] = numpy.diag(ms[:, ini:ini+d])
+                ini = k * d
+                ms[:, ini:ini + d] = numpy.dot(numpy.dot(w_est, m_matrix[:, ini:ini + d]), w_est.T)
+                rs[:, k] = numpy.diag(ms[:, ini:ini + d])
 
         return w_est, ms
 
@@ -364,10 +365,10 @@ class CanonicalCorrelation():
         y_matrix = signals[:, self.delay:]
         x_matrix = signals[:, : -self.delay]
 
-        correlation_yy = numpy.matmul(y_matrix, numpy.transpose(y_matrix)) * (1/samples)
-        correlation_xx = numpy.matmul(x_matrix, numpy.transpose(x_matrix)) * (1/samples)
+        correlation_yy = numpy.matmul(y_matrix, numpy.transpose(y_matrix)) * (1 / samples)
+        correlation_xx = numpy.matmul(x_matrix, numpy.transpose(x_matrix)) * (1 / samples)
 
-        correlation_xy = numpy.matmul(x_matrix, numpy.transpose(y_matrix)) * (1/samples)
+        correlation_xy = numpy.matmul(x_matrix, numpy.transpose(y_matrix)) * (1 / samples)
         correlation_yx = numpy.transpose(correlation_xy)
 
         inv_correlation_yy = numpy.linalg.pinv(correlation_yy)
@@ -404,7 +405,7 @@ class CanonicalCorrelation():
         return numpy.dot(self.mixing_matrix, sources)
 
 
-class EogDenoiser:
+class EogDenoiser():
 
     def __init__(self, sampling_frequency: int):
         self.sampling_frequency = sampling_frequency
@@ -441,7 +442,7 @@ class EogDenoiser:
         x_axis_span = len(source)
         y_axis_span = max(source) - min(source)
         y_normalized_axis = source - max(source) / y_axis_span
-        x_normalized_axis = (1 / (x_axis_span-1)) * numpy.ones((1, x_axis_span-1))
+        x_normalized_axis = (1 / (x_axis_span - 1)) * numpy.ones((1, x_axis_span - 1))
         y_axis_differences = y_normalized_axis[1:] - y_normalized_axis[: -1]
         waveform_lenght = numpy.sum((numpy.sqrt(x_normalized_axis ** 2 + y_axis_differences ** 2)))
         dimension = 1 + numpy.log(waveform_lenght / numpy.log(2 * (x_axis_span - 1)))
@@ -500,7 +501,7 @@ class EogDenoiser:
         return numpy.concat(aggregated_sources, axis=1), numpy.concat(clean_eegs, axis=1)
 
 
-class EmgDenoiser:
+class EmgDenoiser():
 
     def __init__(self, sampling_frequency: int = None):
         """
@@ -530,8 +531,8 @@ class EmgDenoiser:
         """
         self.psd_ratio = []
         _, samples = tuple(sources.shape)
-        segment_length = min([2*self.sampling_frequency, int(samples/2)])
-        nfft_length = 2 ** numpy.ceil(numpy.log2(min([2*self.sampling_frequency, int(samples/2)])))
+        segment_length = min([2 * self.sampling_frequency, int(samples / 2)])
+        nfft_length = 2 ** numpy.ceil(numpy.log2(min([2 * self.sampling_frequency, int(samples / 2)])))
 
         source_mean = numpy.mean(sources, axis=0)
         centered_sources = numpy.subtract(sources, source_mean)

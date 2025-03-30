@@ -5,6 +5,7 @@ mne
 mne-features
 networkx
 pandasql
+pylint
 python-dotenv
 PyYAML
 pep8-naming

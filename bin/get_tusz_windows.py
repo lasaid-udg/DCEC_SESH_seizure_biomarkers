@@ -18,11 +18,11 @@ OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 def main():
     slices_tusz = EegSlicesTusz()
     global_metadata = slices_tusz.metadata
-    
+
     for patient, patient_metadata in global_metadata.items():
         logging.info(f"Processing patient = {patient}")
         for seizure_number in range(len(patient_metadata)):
-            logging.info(f"Processing eeg slice")
+            logging.info("Processing eeg slice")
             seizure_metadata, eeg_slice = slices_tusz.get(patient, seizure_number)
 
             ###########################################################
@@ -31,7 +31,6 @@ def main():
                 _, eeg_slice = eog_denoiser.apply_by_segments(eeg_slice)
             except Exception as exc:
                 logging.error(f"Error in emg denoiser = {exc}")
-
 
             emg_denoiser = EmgDenoiser(seizure_metadata["sampling_frequency"])
             try:

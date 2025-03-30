@@ -49,3 +49,4 @@ mkdir ${BIOMARKERS_PROJECT_HOME}/features/chb-mit
 mkdir ${BIOMARKERS_PROJECT_HOME}/features/siena
 mkdir ${BIOMARKERS_PROJECT_HOME}/features/tusz
 mkdir ${BIOMARKERS_PROJECT_HOME}/features/tuep
+mkdir ${BIOMARKERS_PROJECT_HOME}/videos

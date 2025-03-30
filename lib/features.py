@@ -3,6 +3,7 @@ import networkx
 import scipy.stats
 import scipy.signal
 import mne_features.univariate
+from typing import Generator
 
 
 class FeatureGateway():
@@ -10,9 +11,9 @@ class FeatureGateway():
     def __init__(self):
         pass
 
-    def __call__(self, feature: str, dataset: numpy.array, sampling_frequency: int = None) -> float:
+    def __call__(self, feature: str, dataset: numpy.array, sampling_frequency: int = None) -> float | numpy.array:
         """
-        :param feature: name of the feature to compute
+        :param feature: name of the feature
         :param dataset: single eeg channel [1 x samples]
         :param sampling_frequency: sampling_frequency [Hz]
         """
@@ -42,7 +43,7 @@ class FeatureGateway():
         data = numpy.expand_dims(data, axis=0)
         return numpy.round(mne_features.univariate.compute_app_entropy(data)[0], decimals=5)
 
-    def power_spectral_density(self, data: numpy.array, sampling_frequency: int) -> float:
+    def power_spectral_density(self, data: numpy.array, sampling_frequency: int) -> numpy.array:
         data = numpy.expand_dims(data, axis=0)
         densities = mne_features.univariate.compute_pow_freq_bands(sampling_frequency,
                                                                    data,
@@ -56,7 +57,7 @@ class FeatureGateway():
         return numpy.round(mne_features.bivariate.compute_phase_lock_val(data, include_diag=False),
                            decimals=5)
 
-    def coherence(self, data: numpy.array, sampling_frequency: int) -> float:
+    def coherence(self, data: numpy.array, sampling_frequency: int) -> numpy.array:
         number_channels, _ = data.shape
         number_coefficients = number_channels * (number_channels - 1) // 2
         mean_coherences = [numpy.empty((number_coefficients,)),
@@ -83,15 +84,15 @@ class FeatureGateway():
 
         return (numpy.round(coherence, decimals=5) for coherence in mean_coherences)
 
-    def global_efficiency(self, graph: list):
+    def global_efficiency(self, graph: list) -> float:
         graph = networkx.Graph(graph)
         return numpy.round(networkx.global_efficiency(graph), 4)
 
-    def local_efficiency(self, graph: list):
+    def local_efficiency(self, graph: list) -> float:
         graph = networkx.Graph(graph)
         return numpy.round(networkx.local_efficiency(graph), 4)
 
-    def get_upper_triangle_indices(self, number_channels: int):
+    def get_upper_triangle_indices(self, number_channels: int) -> Generator[tuple]:
         """
         Enumeration of the upper-triangular part of a squre matrix.
         """

@@ -32,10 +32,12 @@ def main():
         eeg_array = window[:, :]
 
         if FEATURE == "coherence":
-            logging.info(f"Processing instance")
-            delta, theta, alpha, beta, all = feature_estimator(FEATURE, eeg_array, metadata["sampling_frequency"])
-            
-            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"], [delta, theta, alpha, beta, all]):
+            logging.info("Processing instance")
+            delta, theta, alpha, beta, all = feature_estimator(FEATURE, eeg_array,
+                                                               metadata["sampling_frequency"])
+
+            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"],
+                                       [delta, theta, alpha, beta, all]):
                 logging.info(f"Processing band = {band_name}")
                 feature_counter = 0
                 for i in range(len(metadata["channels"])):
@@ -52,8 +54,9 @@ def main():
         else:
             delta, theta, alpha, beta = BandEstimator.get_eeg_bands(eeg_array,
                                                                     metadata["sampling_frequency"])
-            
-            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"], [delta, theta, alpha, beta, eeg_array]):
+
+            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"],
+                                       [delta, theta, alpha, beta, eeg_array]):
                 logging.info(f"Processing band = {band_name}")
 
                 feature_value = feature_estimator(FEATURE, band)
@@ -64,11 +67,11 @@ def main():
                         if i == j:
                             continue
                         feature_list.append({"patient": metadata["patient"],
-                                            "band": band_name,
-                                            "channels": f"{metadata['channels'][i]}_{metadata['channels'][j]}",
-                                            "index_channels": f"{i}_{j}",
-                                            "feature": FEATURE,
-                                            "value": feature_value[counter]})
+                                             "band": band_name,
+                                             "channels": f"{metadata['channels'][i]}_{metadata['channels'][j]}",
+                                             "index_channels": f"{i}_{j}",
+                                             "feature": FEATURE,
+                                             "value": feature_value[counter]})
                         counter += 1
 
     feature_df = pandas.DataFrame(feature_list)

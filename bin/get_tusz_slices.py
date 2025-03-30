@@ -10,7 +10,6 @@ sys.path.append("../")
 from lib.metadata import MetadataListTusz
 from lib.signals import EegProcessorTusz, EegSlicer
 from lib.filters import FilterBank
-from lib.bss import EogDenoiser, EmgDenoiser
 
 
 OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
@@ -28,7 +27,7 @@ def main():
             logging.info((f"Number of seizures = {len(seizures['seizures']) - 1}"))
 
             if len(seizures["seizures"]) < 2:
-                logging.info((f"Not enough seizures, skipping patient"))
+                logging.info("Not enough seizures, skipping patient")
                 continue
 
             try:

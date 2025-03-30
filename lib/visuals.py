@@ -22,10 +22,10 @@ def generate_seizure_line(start_time: int, end_time: int, seizure_ranges: list) 
     for seizure_range in seizure_ranges[1:]:
         if seizure_range[0] > start_time and seizure_range[0] < end_time:
             x_coordinate = int(seizure_range[0])
-            horizontal_lines.append([x_coordinate,  x_coordinate, "r"])
+            horizontal_lines.append([x_coordinate, x_coordinate, "r"])
         if seizure_range[1] > start_time and seizure_range[1] < end_time:
             x_coordinate = int(seizure_range[1])
-            horizontal_lines.append([x_coordinate,  x_coordinate, "b"])
+            horizontal_lines.append([x_coordinate, x_coordinate, "b"])
 
     return horizontal_lines
 
@@ -83,14 +83,15 @@ def plot_frequency_and_phase_response(frequency_range: list, response: list, out
     """
     Plot the filter's frequency and phase response
     :param frequency_range: the frequencies at which ´response´ was computed
-    :param h: the frequency response, as complex numbers
+    :param response: the frequency response, as complex numbers
+    :param output_file: if specified the figure will be saved
     """
     grid_specs = GridSpec(2, 1, wspace=0.08, hspace=0.50)
     fig = plt.figure(figsize=(5.5, 4))
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
-    ax.plot(frequency_range, 20*np.log10(abs(response)), linewidth=1, color="r")
+    ax.plot(frequency_range, 20 * np.log10(abs(response)), linewidth=1, color="r")
     ax.set_title("Filter Frequency Response", fontsize=8)
     ax.set_ylabel("Amplitude decrease [dB]", fontsize=8)
     ax.set_xlabel("Frequency [Hz]", fontsize=8)
@@ -99,7 +100,7 @@ def plot_frequency_and_phase_response(frequency_range: list, response: list, out
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
-    ax.plot(frequency_range, np.unwrap(np.angle(response))*180/np.pi, linewidth=1, color="b")
+    ax.plot(frequency_range, np.unwrap(np.angle(response)) * 180 / np.pi, linewidth=1, color="b")
     ax.set_title("Filter Phase Response", fontsize=8)
     ax.set_ylabel("Phase shift [deg]", fontsize=8)
     ax.set_xlabel("Frequency [Hz]", fontsize=8)
@@ -147,6 +148,8 @@ def plot_eeg_spectrum(frequency_range: np.array, spectral_components: np.array, 
 def plot_stationarity_bar_chart(stationarity_results: list, windows_lenghths: list):
     """
     Plot the amount of stationary windows as per KPSS and ADF tests
+    :param stationarity_results: results of White and KPSS tests
+    :param windows_lenghts: window-lenghts for comparison
     """
     max_value = 0
     for result in stationarity_results:
@@ -515,7 +518,7 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
                            size=8)
         points = []
         for channel in data_array.channel.tolist():
-            point = [x*1.2 for x in electrode_positions[channel]]
+            point = [x * 1.2 for x in electrode_positions[channel]]
             points.append(point)
 
         zi = griddata(points, data_array.value, (xi, yi), method="cubic")
@@ -613,7 +616,7 @@ def plot_univariate_ml_bar_chart(delta: pandas.DataFrame, theta: pandas.DataFram
                                  all: pandas.DataFrame,
                                  output_file: str = None):
     """
-    Plot the eeg univariate features per band
+    Plot the accuracy results per band
     :param delta:
     :param theta:
     :param alpha:
@@ -688,7 +691,7 @@ def plot_univariate_inter_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
                                         _: pandas.DataFrame,
                                         output_file: str = None):
     """
-    Plot the eeg univariate features per band
+    Plot the eeg univariate features healthy subject vs patients (per band)
     :param delta:
     :param theta:
     :param alpha:
@@ -743,7 +746,7 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
                                          _: pandas.DataFrame,
                                          output_file: str = None):
     """
-    Plot the eeg univariate features per band
+    Plot the eeg univariate features healthy subject vs patients (per band)
     :param delta:
     :param theta:
     :param alpha:
@@ -802,7 +805,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
                                         alpha: pandas.DataFrame, beta: pandas.DataFrame,
                                         output_file: str = None):
     """
-    Plot the eeg univariate features per band
+    Plot the PSD values per band
     :param delta:
     :param theta:
     :param alpha:
@@ -857,7 +860,7 @@ def plot_univariate_intra_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
                                          alpha: pandas.DataFrame, beta: pandas.DataFrame,
                                          output_file: str = None):
     """
-    Plot the eeg univariate features per band
+    Plot the PDS values per band
     :param delta:
     :param theta:
     :param alpha:
@@ -918,7 +921,7 @@ def plot_univariate_ml_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.Data
                                      _: pandas.DataFrame,
                                      output_file: str = None):
     """
-    Plot the eeg univariate features per band
+    Plot the accuracy results per band
     :param delta:
     :param theta:
     :param alpha:
@@ -1078,7 +1081,7 @@ def plot_graph_striplot_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
                               alpha: pandas.DataFrame, beta: pandas.DataFrame,
                               output_file: str = None):
     """
-    Plot the eeg univariate features per band
+    Plot the global efficiency values per band
     :param delta:
     :param theta:
     :param alpha:
@@ -1146,7 +1149,7 @@ def plot_graph_pointplot_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                alpha: pandas.DataFrame, beta: pandas.DataFrame,
                                ylim: list, output_file: str = None):
     """
-    Plot the eeg univariate features per band
+    Plot the global efficiency values per band
     :param delta:
     :param theta:
     :param alpha:
@@ -1209,4 +1212,80 @@ def plot_graph_pointplot_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
                     transparent=False, facecolor='white')
+    plt.show()
+
+
+def plot_topoplot_features_frame(impacted_channels: list, entropy_features: list, theta_psd_features: list,
+                                 alpha_psd_features: list, entropy_min_value: float, entropy_max_value: float,
+                                 theta_psd_min_value: float, theta_psd_max_value: float,
+                                 alpha_psd_min_value: float, alpha_psd_max_value: float,
+                                 output_file: str = None):
+    """
+    Plot a single frame of the topographic video
+    :param impacted_chanles: channels displaying a ictal event
+    :param features [entropy, theta psd, alpha psd]: feature value per channel
+    :param min_value [entropy, theta psd, alpha psd]: minimum value across all the frames
+    :param max_value [entropy, theta psd, alpha psd]: maximum value across all the frames
+    :param output_file: if specified the figure will be saved
+    """
+    electrode_positions = settings["electrode_positions"]
+
+    grid_specs = GridSpec(1, 3)
+    fig = plt.figure(figsize=(12, 4))
+    xi, yi = np.mgrid[-1:1:100j, -1:1:100j]
+
+    def single_topomap(ax_object, data_array: list, min_value: float, max_value: float):
+        ax_object.axis((-1.2, 1.2, -1.2, 1.2))
+        circle = Circle([0, 0], radius=1, fill=False)
+        ax_object.add_patch(circle)
+
+        points = []
+        channel_names = [x[0] for x in data_array]
+        channel_values = [x[1] for x in data_array]
+        for channel in channel_names:
+            point = [x * 1.2 for x in electrode_positions[channel]]
+            points.append(point)
+
+        zi = griddata(points, channel_values, (xi, yi), method="cubic")
+        colormap = plt.cm.jet
+        normalize = matplotlib.colors.Normalize(vmin=min_value, vmax=max_value)
+        ax_object.contourf(xi, yi, zi, 10, cmap=colormap, norm=normalize)
+
+        for electrode, coordinate in electrode_positions.items():
+            if electrode not in impacted_channels:
+                circle = Circle(coordinate, radius=0.08, fill=False, color="k")
+            else:
+                circle = Circle(coordinate, radius=0.08, fill=True, color="k")
+            ax_object.add_patch(circle)
+            ax_object.text(coordinate[0], coordinate[1], electrode,
+                           verticalalignment='center',
+                           horizontalalignment='center',
+                           size=10)
+
+        ax_object.axes.get_xaxis().set_ticks([])
+        ax_object.axes.get_yaxis().set_ticks([])
+        ax_object.spines['top'].set_visible(False)
+        ax_object.spines['right'].set_visible(False)
+        ax_object.spines['bottom'].set_visible(False)
+        ax_object.spines['left'].set_visible(False)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    single_topomap(ax, entropy_features, entropy_min_value, entropy_max_value)
+    ax.set_xlabel("a) Approximate entropy", fontsize=10)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    single_topomap(ax, theta_psd_features, theta_psd_min_value, theta_psd_max_value)
+    ax.set_xlabel("b) PSD theta band", fontsize=10)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 2])
+    single_topomap(ax, alpha_psd_features, alpha_psd_min_value, alpha_psd_max_value)
+    ax.set_xlabel("c) PSD alpha band", fontsize=10)
+
+    if output_file:
+        plt.savefig(output_file, dpi=100, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+
     plt.show()
