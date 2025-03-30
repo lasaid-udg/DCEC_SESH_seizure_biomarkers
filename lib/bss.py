@@ -7,16 +7,28 @@ from . import settings
 
 class IWasobi():
 
-    def __init__(self, ar_order=10, rmax=0.99, eps0=5.0e-7):
-        self.ar_order = ar_order
+    def __init__(self, autoregressive_order=10, rmax=0.99, epsilon_0=5.0e-7):
+        """
+        :param autoregressive_order: maximum AR order of the separated sources
+        param rmax: maximum magnitude of poles of the AR sources
+        :param epsilon_0: constant to control condition number of weight matrices
+        """
+        self.autoregressive_order = autoregressive_order
         self.rmax = rmax
-        self.eps0 = eps0
+        self.epsilon_0 = epsilon_0
         self.number_iterations = 3
         self.separation_matrix = None
         self.mixing_matrix = None
         self.signal_array_mean = None
 
-    def fit(self, signals: numpy.array):
+    def fit(self, signals: numpy.array)-> tuple:
+        """
+        Implementation of Blind Source Separation through WASOBI algorithm
+        Compute the sources and separation matrix.
+        
+        Reference matlab implementation: github.com/compmem/ptsa
+        :param signals: matrix with the mixed signals [sources x samples]
+        """
         signal_array = signals
 
         channels, samples = signal_array.shape
@@ -24,40 +36,40 @@ class IWasobi():
         signal_array_mean = numpy.mean(signal_array, axis=1)
         signal_array = numpy.transpose(numpy.subtract(numpy.transpose(signal_array), signal_array_mean))
 
-        ar_samples = samples - self.ar_order
+        autoregressive_samples = samples - self.autoregressive_order
 
-        correlation_matrix = self.cross_correlation(signal_array, ar_samples, self.ar_order)
+        correlation_matrix = self.cross_correlation(signal_array, autoregressive_samples, self.autoregressive_order)
 
-        for idx in range(1, self.ar_order + 1):
+        for idx in range(1, self.autoregressive_order + 1):
             idk = channels * idx
             sub_matrix = correlation_matrix[:, idk: idk + channels]
             correlation_matrix[:, idk: idk + channels] = 0.5 * (sub_matrix + numpy.transpose(sub_matrix))
 
-        winit, ms = self.approximate_joint_diag_uniform(correlation_matrix, 20)
+        weights_init, diagonalized_matrices = self.approximate_joint_diag_uniform(correlation_matrix, 20)
 
-        w = winit.copy()
+        weights = weights_init.copy()
 
         for _ in range(self.number_iterations):
-            h = self.weights(ms, self.rmax, self.eps0)
-            w, ms = self.approximate_joint_diag_weighted(correlation_matrix, h, w, 5)
+            h = self.weights(diagonalized_matrices, self.rmax, self.epsilon_0)
+            weights, diagonalized_matrices = self.approximate_joint_diag_weighted(correlation_matrix, h, weights, 5)
 
-        sources = numpy.transpose(numpy.add(numpy.transpose(numpy.dot(w, signals)),
-                                            numpy.dot(w, signal_array_mean)))
+        sources = numpy.transpose(numpy.add(numpy.transpose(numpy.dot(weights, signals)),
+                                            numpy.dot(weights, signal_array_mean)))
 
-        return (w, signal_array_mean, sources)
+        return (weights, signal_array_mean, sources)
 
-    def cross_correlation(self, signal_array: numpy.array, ar_samples: int, ar_order: int) -> numpy.array:
+    def cross_correlation(self, signal_array: numpy.array, ar_samples: int, autoregressive_order: int) -> numpy.array:
         """
         Correlation matrix
         :param signal_array: multivariate signal, channels first
         :param ar_samples
-        :param ar_order
+        :param autoregressive_order
         :param max_iterations: Maximum iterations for the approximation
         """
         number_channels = signal_array.shape[0]
-        correlation_matrix = numpy.zeros((number_channels, (ar_order + 1) * number_channels))
+        correlation_matrix = numpy.zeros((number_channels, (autoregressive_order + 1) * number_channels))
 
-        for idx in range(ar_order + 1):
+        for idx in range(autoregressive_order + 1):
             i = number_channels * (idx)
             normalization_factor = 1 / numpy.float64(ar_samples)
             signal = signal_array[:, :ar_samples]
@@ -67,7 +79,7 @@ class IWasobi():
 
         return correlation_matrix
 
-    def approximate_joint_diag_uniform(self, matrices: numpy.array, max_iterations: int = 20) -> tuple:
+    def approximate_joint_diag_uniform(self, matrices: numpy.array, max_iterations: int = 20) -> Tuple[numpy.array, numpy.array]:
         """
         Approximate joint diagonalization with uniform weights
         :param matrices: matrices to be diagonalized
@@ -77,36 +89,36 @@ class IWasobi():
         comparisons_per_channel = numpy.int32(numpy.floor(number_comparisons / numpy.float64(number_channels)))
         iteration = 0
         epsilon = 1e-7
-        improve = 10
+        improvement = 10
 
         eigenvalues, eigenvectors = numpy.linalg.eig(matrices[:, :number_channels])
         eigenvectors = numpy.real_if_close(eigenvectors, tol=100)
-        w_est = numpy.dot(numpy.diag(1.0 / numpy.sqrt(eigenvalues)), numpy.transpose(eigenvectors))
+        weights_estimation = numpy.dot(numpy.diag(1.0 / numpy.sqrt(eigenvalues)), numpy.transpose(eigenvectors))
 
-        ms = matrices.copy()
-        rs = numpy.zeros((number_channels, comparisons_per_channel))
+        diagonalized_matrices = matrices.copy()
+        lagged_cov_matrix = numpy.zeros((number_channels, comparisons_per_channel))
 
         for idx in range(comparisons_per_channel):
             i = number_channels * idx
             vector = matrices[:, i:i + number_channels]
             lagged_vector = numpy.transpose(matrices[:, i:i + number_channels])
             matrices[:, i:i + number_channels] = 0.5 * (vector + lagged_vector)
-            ms[:, i:i + number_channels] = numpy.dot(numpy.dot(w_est, matrices[:, i:i + number_channels]),
-                                                     numpy.transpose(w_est))
-            rs[:, idx] = numpy.diag(ms[:, i:i + number_channels])
+            diagonalized_matrices[:, i:i + number_channels] = numpy.dot(numpy.dot(weights_estimation, matrices[:, i:i + number_channels]),
+                                                     numpy.transpose(weights_estimation))
+            lagged_cov_matrix[:, idx] = numpy.diag(diagonalized_matrices[:, i:i + number_channels])
 
-        crit = (ms**2).sum() - (rs**2).sum()
+        crit = (diagonalized_matrices**2).sum() - (diagonalized_matrices**2).sum()
 
-        while improve > epsilon and iteration < max_iterations:
+        while improvement > epsilon and iteration < max_iterations:
             b11, b12, b22, c1, c2 = [], [], [], [], []
 
             for idx in range(1, number_channels):
-                yim = ms[0:idx, idx:number_comparisons:number_channels]
-                b22.append(numpy.dot(numpy.sum((rs[idx, :] ** 2), axis=0), numpy.ones((idx, 1))))
-                b12.append(numpy.transpose(numpy.dot(rs[idx, :], numpy.transpose(rs[:idx, :]))))
-                b11.append(numpy.sum((rs[:idx, :] ** 2), axis=1))
-                c2.append(numpy.transpose(numpy.dot(rs[idx, :], numpy.transpose(yim))))
-                c1.append(numpy.sum((rs[:idx, :] * yim), axis=1))
+                yim = diagonalized_matrices[0:idx, idx:number_comparisons:number_channels]
+                b22.append(numpy.dot(numpy.sum((lagged_cov_matrix[idx, :] ** 2), axis=0), numpy.ones((idx, 1))))
+                b12.append(numpy.transpose(numpy.dot(lagged_cov_matrix[idx, :], numpy.transpose(lagged_cov_matrix[:idx, :]))))
+                b11.append(numpy.sum((lagged_cov_matrix[:idx, :] ** 2), axis=1))
+                c2.append(numpy.transpose(numpy.dot(lagged_cov_matrix[idx, :], numpy.transpose(yim))))
+                c1.append(numpy.sum((lagged_cov_matrix[:idx, :] * yim), axis=1))
 
             b22 = numpy.squeeze(numpy.vstack(b22))
             b12 = numpy.hstack(b12)
@@ -114,9 +126,9 @@ class IWasobi():
             c2 = numpy.hstack(c2)
             c1 = numpy.hstack(c1)
 
-            det0 = b11 * b22 - b12 ** 2
-            d1 = (c1 * b22 - b12 * c2) / det0
-            d2 = (b11 * c2 - b12 * c1) / det0
+            determinant_0 = b11 * b22 - b12 ** 2
+            d1 = (c1 * b22 - b12 * c2) / determinant_0
+            d2 = (b11 * c2 - b12 * c1) / determinant_0
 
             m = 0
             a0 = numpy.eye(number_channels)
@@ -127,32 +139,32 @@ class IWasobi():
                 m += id
 
             a_inv = numpy.linalg.inv(a0)
-            w_est = numpy.dot(a_inv, w_est)
-            r_aux = numpy.dot(numpy.dot(w_est, matrices[:, :number_channels]), w_est.T)
+            weights_estimation = numpy.dot(a_inv, weights_estimation)
+            r_aux = numpy.dot(numpy.dot(weights_estimation, matrices[:, :number_channels]), weights_estimation.T)
             aux = 1 / numpy.sqrt(numpy.diag(r_aux))
-            w_est = numpy.dot(numpy.diag(aux), w_est)
+            weights_estimation = numpy.dot(numpy.diag(aux), weights_estimation)
 
             for k in range(comparisons_per_channel):
                 ini = k * number_channels
-                ms[:, ini:ini + number_channels] = numpy.dot(numpy.dot(w_est, matrices[:, ini:ini + number_channels]), w_est.T)
-                rs[:, k] = numpy.diag(ms[:, ini:ini + number_channels])
+                diagonalized_matrices[:, ini:ini + number_channels] = numpy.dot(numpy.dot(weights_estimation, matrices[:, ini:ini + number_channels]), weights_estimation.T)
+                lagged_cov_matrix[:, k] = numpy.diag(diagonalized_matrices[:, ini:ini + number_channels])
 
-            critic = (ms**2).sum() - (rs**2).sum()
-            improve = numpy.abs(critic - crit)
+            critic = (diagonalized_matrices**2).sum() - (lagged_cov_matrix**2).sum()
+            improvement = numpy.abs(critic - crit)
             crit = critic
             iteration += 1
 
-        return w_est, ms
+        return weights_estimation, diagonalized_matrices
 
-    def weights(self, ms, rmax, eps0) -> numpy.array:
-        number_channels, number_comparisons = ms.shape
+    def weights(self, diagonalized_matrices, rmax, epsilon_0) -> numpy.array:
+        number_channels, number_comparisons = diagonalized_matrices.shape
         comparisons_per_channel = numpy.int32(numpy.floor(number_comparisons / numpy.float64(number_channels)))
         d2 = numpy.int32(number_channels * (number_channels - 1) / 2.0)
         r = numpy.zeros((comparisons_per_channel, number_channels))
 
         for index in range(comparisons_per_channel):
             id = index * number_channels
-            r[index, :] = numpy.diag(ms[:, id:id + number_channels])
+            r[index, :] = numpy.diag(diagonalized_matrices[:, id:id + number_channels])
 
         arc, sigmy = self.armodel(r, rmax)
 
@@ -164,7 +176,7 @@ class IWasobi():
                 ll += 1
 
         phi = self.ar2r(ar3)
-        h = self.th_inv5(phi, comparisons_per_channel, d2, eps0 * phi[0, :])
+        h = self.th_inv5(phi, comparisons_per_channel, d2, epsilon_0 * phi[0, :])
 
         im = 0
         for i in range(1, number_channels):
@@ -176,7 +188,7 @@ class IWasobi():
 
         return h
 
-    def armodel(self, r, rmax):
+    def armodel(self, r, rmax) -> Tuple[numpy.array, numpy.array]:
         """
         Compute AR coefficients of the sources given covariance functions
         but if the zeros have magnitude > rmax, the zeros are pushed back.
@@ -197,11 +209,11 @@ class IWasobi():
 
             ar[:, id] = numpy.real(numpy.poly(v).T)
 
-        rs = self.ar2r(ar)
-        sigmy = r[0, :] / rs[0, :]
+        lagged_cov_matrix = self.ar2r(ar)
+        sigmy = r[0, :] / lagged_cov_matrix[0, :]
         return ar, sigmy
 
-    def ar2r(self, a):
+    def ar2r(self, a) -> numpy.array:
         """
         Computes covariance function of AR processes from
         the autoregressive coefficients using an inverse Schur algorithm
@@ -238,8 +250,6 @@ class IWasobi():
 
     def th_inv5(self, phi, k_matrix, m, eps):
         """
-        Implements fast (complexity O(M*K^2))
-        Computation of the following piece of code:
         """
         c = []
         for im in range(m):
@@ -250,37 +260,37 @@ class IWasobi():
 
         return numpy.concatenate(c, axis=1)
 
-    def approximate_joint_diag_weighted(self, m_matrix, h, w_est0=None, maxnumit=100):
+    def approximate_joint_diag_weighted(self, m_matrix, h, weights_estimation_0=None, maxnumit=100) -> Tuple[numpy.array, numpy.array]:
         """
         Approximate joint diagonalization with non-uniform weights
         :param m: matrices to be diagonalized
         :param h: diagonal blocks of the weight matrix
-        :param w_est0: initial estimate of the demixing matrix, if available
+        :param weights_estimation_0: initial estimate of the demixing matrix, if available
         :param maxnumit: maximum number of iterations
-        :returns w_est: estimated demixing matrix
-                        such that w_est * M_k * w_est' are roughly diagonal
-        :returns ms: diagonalized matrices composed of w_est * m_k * w_est'
+        :returns weights_estimation: estimated demixing matrix
+                                     such that weights_estimation * M_k * weights_estimation' are roughly diagonal
+        :returns diagonalized_matrices: diagonalized matrices composed of weights_estimation * m_k * weights_estimation'
         """
         d, md = m_matrix.shape
         l_vector = numpy.int32(numpy.floor(md / numpy.float64(d)))
         dd2 = numpy.int32(d * (d - 1) / 2.0)
         md = l_vector * d
 
-        if w_est0 is None:
+        if weights_estimation_0 is None:
             e, h = numpy.linalg.eig(m_matrix[:, :d])
             h = numpy.real_if_close(h, tol=100)
-            w_est = numpy.dot(numpy.diag(1 / numpy.sqrt(e)), h.T)
+            weights_estimation = numpy.dot(numpy.diag(1 / numpy.sqrt(e)), h.T)
         else:
-            w_est = w_est0
+            weights_estimation = weights_estimation_0
 
-        ms = m_matrix.copy()
-        rs = numpy.zeros((d, l_vector))
+        diagonalized_matrices = m_matrix.copy()
+        lagged_cov_matrix = numpy.zeros((d, l_vector))
 
         for k in range(l_vector):
             ini = k * d
             m_matrix[:, ini:ini + d] = 0.5 * (m_matrix[:, ini:ini + d] + m_matrix[:, ini:ini + d].T)
-            ms[:, ini:ini + d] = numpy.dot(numpy.dot(w_est, m_matrix[:, ini:ini + d]), w_est.T)
-            rs[:, k] = numpy.diag(ms[:, ini:ini + d])
+            diagonalized_matrices[:, ini:ini + d] = numpy.dot(numpy.dot(weights_estimation, m_matrix[:, ini:ini + d]), weights_estimation.T)
+            lagged_cov_matrix[:, k] = numpy.diag(diagonalized_matrices[:, ini:ini + d])
 
         for _ in range(maxnumit):
             b11 = numpy.zeros((dd2, 1))
@@ -294,9 +304,9 @@ class IWasobi():
                 for id2 in range(id):
                     im = m * l_vector
                     wm = h[:, im:im + l_vector]
-                    yim = ms[id, id2:md:d]
-                    rs_id = rs[id, :]
-                    rs_id2 = rs[id2, :]
+                    yim = diagonalized_matrices[id, id2:md:d]
+                    rs_id = lagged_cov_matrix[id, :]
+                    rs_id2 = lagged_cov_matrix[id2, :]
                     wlam1 = numpy.dot(wm, rs_id.T)
                     wlam2 = numpy.dot(wm, rs_id2.T)
                     b11[m] = numpy.dot(rs_id2, wlam2)
@@ -306,9 +316,9 @@ class IWasobi():
                     c2[m] = numpy.dot(wlam1.T, yim.T)
                     m += 1
 
-            det0 = b11 * b22 - b12 ** 2
-            d1 = (c1 * b22 - b12 * c2) / det0
-            d2 = (b11 * c2 - b12 * c1) / det0
+            determinant_0 = b11 * b22 - b12 ** 2
+            d1 = (c1 * b22 - b12 * c2) / determinant_0
+            d2 = (b11 * c2 - b12 * c1) / determinant_0
             m = 0
             a0 = numpy.eye(d)
 
@@ -318,17 +328,17 @@ class IWasobi():
                 m += id
 
             a_inv = numpy.linalg.inv(a0)
-            w_est = numpy.dot(a_inv, w_est)
-            r_aux = numpy.dot(numpy.dot(w_est, m_matrix[:, :d]), w_est.T)
+            weights_estimation = numpy.dot(a_inv, weights_estimation)
+            r_aux = numpy.dot(numpy.dot(weights_estimation, m_matrix[:, :d]), weights_estimation.T)
             aux = 1 / numpy.sqrt(numpy.diag(r_aux))
-            w_est = numpy.dot(numpy.diag(aux), w_est)
+            weights_estimation = numpy.dot(numpy.diag(aux), weights_estimation)
 
             for k in range(l_vector):
                 ini = k * d
-                ms[:, ini:ini + d] = numpy.dot(numpy.dot(w_est, m_matrix[:, ini:ini + d]), w_est.T)
-                rs[:, k] = numpy.diag(ms[:, ini:ini + d])
+                diagonalized_matrices[:, ini:ini + d] = numpy.dot(numpy.dot(weights_estimation, m_matrix[:, ini:ini + d]), weights_estimation.T)
+                lagged_cov_matrix[:, k] = numpy.diag(diagonalized_matrices[:, ini:ini + d])
 
-        return w_est, ms
+        return weights_estimation, diagonalized_matrices
 
     def fit_transform(self, signal: numpy.array) -> numpy.array:
         """
@@ -360,6 +370,13 @@ class CanonicalCorrelation():
         self.delay = delay
 
     def fit(self, signals: numpy.array) -> Tuple[numpy.array, numpy.array]:
+        """
+        Implementation of Blind Source Separation through Canonical Correlation Analysis
+        Compute the canonical components and separation matrix.
+        
+        Reference matlab implementation: github.com/germangh/eeglab_plugin_aar
+        :param signals: matrix with the mixed signals [sources x samples]
+        """
         _, samples = tuple(signals.shape)
 
         y_matrix = signals[:, self.delay:]
@@ -391,9 +408,9 @@ class CanonicalCorrelation():
         Interface function for BSSCA algorithm.
         IMPORTANT: If the maximum spread of eigenvalues is violated, the most redundant
         mixtures will be discarded in the estimation process.
-        IMPORTANT: If the unkonwn mixing matrix is not of
-        full-column rank we will have that size(A,1)>size(W,1).
-        :param signal: array of eeg signal (channels first)
+        IMPORTANT: If the unknown mixing matrix is not of
+        full-column rank we will have that size(A,1) > size(W,1).
+        :param signal: array of eeg signal [channels x samples]
         """
         separation_matrix, separated_sources = self.fit(signal)
         mixing_matrix = numpy.linalg.pinv(separation_matrix)
@@ -402,12 +419,19 @@ class CanonicalCorrelation():
         return separated_sources
 
     def inverse_transform(self, sources: numpy.array) -> numpy.array:
+        """
+        Return the mixed sources
+        :param sources: matrix with the eeg sources [sources x samples]
+        """
         return numpy.dot(self.mixing_matrix, sources)
 
 
 class EogDenoiser():
 
     def __init__(self, sampling_frequency: int):
+        """
+        :param sampling_frequency: sampling_frequency [Hz]
+        """
         self.sampling_frequency = sampling_frequency
         self.segment_lenght = settings["eog_denoiser_segment_lenght"]
         self.sources_tol = settings["eog_denoiser_sources_tol"]
@@ -417,7 +441,11 @@ class EogDenoiser():
             print(f"Source = {idx + 1}, fd = {dimension}")
         return "Done!"
 
-    def fit_iwasobi(self, segment: list):
+    def fit_iwasobi(self, segment: numpy.array) -> numpy.array:
+        """
+        Estimate the sources for a single eeg segment
+        :param segment: matrix with the eeg sources [sources x samples]
+        """
         self.iwasobi = IWasobi()
         sources = self.iwasobi.fit_transform(segment)
         return sources
@@ -475,7 +503,7 @@ class EogDenoiser():
 
     def apply_by_segments(self, eeg_array: numpy.array) -> numpy.array:
         """
-        It removes the EOG sources by splitting the eeg recording
+        Remove the EOG sources by splitting the eeg recording
         into smaller windows. Each window is processed independently.
         :param eeg_array: [channels x samples]
         """
@@ -519,7 +547,11 @@ class EmgDenoiser():
             print(f"Source = {idx + 1}, fd = {dimension}")
         return "Done!"
 
-    def fit_canonical_correlation(self, segment: list):
+    def fit_canonical_correlation(self, segment: numpy.array) -> numpy.array:
+        """
+        Estimate the sources for a single eeg segment
+        :param segment: matrix with the eeg sources [sources x samples]
+        """
         self.ccanalysis = CanonicalCorrelation()
         sources = self.ccanalysis.fit_transform(segment)
         return sources
@@ -527,7 +559,7 @@ class EmgDenoiser():
     def fit_psd_ratio(self, sources: numpy.array) -> None:
         """
         Compute the PSD ratio between typical eeg and emg bands
-        :param source: 1d-source
+        :param source: matrix with the eeg sources [sources x samples]
         """
         self.psd_ratio = []
         _, samples = tuple(sources.shape)
@@ -550,7 +582,7 @@ class EmgDenoiser():
 
         self.psd_ratio = numpy.array(self.psd_ratio)
 
-    def remove_low_ratio_sources(self, sources: list) -> numpy.array:
+    def remove_low_ratio_sources(self, sources: numpy.array) -> numpy.array:
         """
         Remove EMG components according to their PSD ratio
         :param sources: matrix with the eeg sources [sources x samples]

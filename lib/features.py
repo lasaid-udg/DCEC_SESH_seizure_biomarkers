@@ -3,7 +3,7 @@ import networkx
 import scipy.stats
 import scipy.signal
 import mne_features.univariate
-from typing import Generator
+from typing import Iterable
 
 
 class FeatureGateway():
@@ -92,7 +92,7 @@ class FeatureGateway():
         graph = networkx.Graph(graph)
         return numpy.round(networkx.local_efficiency(graph), 4)
 
-    def get_upper_triangle_indices(self, number_channels: int) -> Generator[tuple]:
+    def get_upper_triangle_indices(self, number_channels: int) -> Iterable[tuple]:
         """
         Enumeration of the upper-triangular part of a squre matrix.
         """

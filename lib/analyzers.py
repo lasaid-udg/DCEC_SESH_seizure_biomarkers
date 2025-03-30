@@ -3,7 +3,7 @@ import numpy
 import pandas
 import logging
 import networkx
-from typing import Generator
+from typing import Iterable
 from pandasql import sqldf
 from . import settings
 from .visuals import plot_univariate_intra_bar_chart, plot_univariate_intra_dist_chart, \
@@ -802,7 +802,7 @@ class IntraBivariateFeatureAnalyzer():
 
         return groups
 
-    def processed_data_for_efficiency(self, seizure_type: str, threshold: float) -> Generator[tuple]:
+    def processed_data_for_efficiency(self, seizure_type: str, threshold: float) -> Iterable[tuple]:
         """
         Compute adjacency matrices for efficiency analysis
         :param seizure_type: type of seizure
