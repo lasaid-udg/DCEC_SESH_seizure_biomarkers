@@ -209,12 +209,13 @@ class StationarityFile():
             full_path = os.path.join(directory, filename)
             self._stationarity_results.append(pandas.read_csv(full_path))
 
-    def bar_chart(self) -> None:
+    def bar_chart(self, output_file=None) -> None:
         """
         Plot the amount of stationary windows across window-lengths
+        :param output_file: if specified the figure will be saved
         """
         stationarity_results = []
         for result in self._stationarity_results:
             grouped_result = sqldf("SELECT result, SUM(count) AS count FROM result GROUP BY result")
             stationarity_results.append(grouped_result)
-        plot_stationarity_bar_chart(stationarity_results, self.windows_lenghts)
+        plot_stationarity_bar_chart(stationarity_results, self.windows_lenghts, output_file)

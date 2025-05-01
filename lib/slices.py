@@ -49,12 +49,18 @@ class EegSlices():
         Print the count of events per seizure type
         """
         summary = {}
+        patients = {}
         for patient_metadata in self.metadata.values():
             for metadata in patient_metadata:
                 if metadata["seizure_type"] not in summary:
                     summary[metadata["seizure_type"]] = 0
+                    patients[metadata["seizure_type"]] = set()
                 summary[metadata["seizure_type"]] += 1
+                patients[metadata["seizure_type"]].add(metadata["patient"])
         print(json.dumps(summary, indent=4))
+
+        for seizure_type, quantity in patients.items():
+            print(f"Seizure type = {seizure_type}, quantity = {len(quantity)}")
 
 
 class EegSlicesChb(EegSlices):

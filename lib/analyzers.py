@@ -1,9 +1,11 @@
 import os
+import glob
 import numpy
 import pandas
 import logging
 import networkx
 from typing import Iterable
+from collections import defaultdict
 from pandasql import sqldf
 from . import settings
 from .visuals import plot_univariate_intra_bar_chart, plot_univariate_intra_dist_chart, \
@@ -12,7 +14,8 @@ from .visuals import plot_univariate_intra_bar_chart, plot_univariate_intra_dist
                      plot_univariate_ml_bar_chart, plot_univariate_inter_bar_chart_psd, \
                      plot_univariate_inter_dist_chart_psd, plot_univariate_intra_bar_chart_psd, \
                      plot_univariate_intra_dist_chart_psd, plot_univariate_ml_bar_chart_psd, \
-                     plot_network_features_time, plot_graph_striplot_chart, plot_graph_pointplot_chart
+                     plot_network_features_time, plot_graph_striplot_chart, plot_graph_pointplot_chart, \
+                     plot_chord_diagram_windows, plot_chord_diagram_windows_inter
 
 
 class IntraUnivariateFeatureAnalyzer():
@@ -1080,3 +1083,119 @@ class InterBivariateTuszAnalyzer(InterBivariateFeatureAnalyzer):
         :param feature: name of the feature file
         """
         super().__init__(feature)
+
+
+class CirclizerCharts():
+
+    def __init__(self):
+        self.groups = (("chb", ("unknown",)),
+                       ("siena", ("IAS",)),
+                       ("tusz", ("gnsz", "fnsz")))
+        self.base_path = os.path.join(os.getenv("BIOMARKERS_PROJECT_HOME"), "reports", "*")
+    
+    def aggregate_single_group(self, database: str, seizure_type: str) -> tuple:
+        """
+        Count the number of significant differences per pair-wise
+        comparison (Nemenyi's test, intra analysis). It aggregates across features, brain
+        regions and bands:
+        :param database: name of the database
+        :param seizure_type: type of the seizure
+        """
+        report_file = glob.glob(f"{self.base_path}/friedman_{database}*.csv")
+        matrix_length = len(settings["intra_windows_categories"])
+        aggregated_values = [[0.1 for _ in range(matrix_length)] for _ in range(matrix_length)]
+
+        for file in report_file:
+            report_dataframe = pandas.read_csv(file)
+            report_dataframe = report_dataframe[report_dataframe.seizure_type == seizure_type]
+
+            for idx1, stage1 in enumerate(settings["intra_windows_categories"]):
+                for idx2, stage2 in enumerate(settings["intra_windows_categories"]):
+                    column_name = f"{stage1[-1]}-{stage2[-1]}"
+
+                    for _, row in report_dataframe.iterrows():
+                        p_value = row.get(column_name)
+                        if p_value is None or row["feature"] == "Aggregation":
+                            continue
+                        if float(p_value) < 0.05:
+                            aggregated_values[idx1][idx2] += 1
+            
+        invalid_links = set()
+        for idx1, row in enumerate(aggregated_values):
+            for idx2, value in enumerate(row):
+                if value == 0.1:
+                    source = settings["intra_windows_abbreviations"][settings["intra_windows_categories"][idx1][-1]]
+                    target = settings["intra_windows_abbreviations"][settings["intra_windows_categories"][idx2][-1]]
+                    invalid_links.add((source, target))
+
+        columns = [settings["intra_windows_abbreviations"][x[-1]] for x in settings["intra_windows_categories"]]
+        matrix_dataframe = pandas.DataFrame(aggregated_values, index=columns, columns=columns)
+        return invalid_links, matrix_dataframe
+
+    def windows_based_charts(self) -> None:
+        """
+        Aggregate statistical test results and plot chord diagram
+        """
+        aggregated_matrices = list()
+        output_directory = os.getenv("BIOMARKERS_PROJECT_HOME")
+        output_file = os.path.join(output_directory, "images", "chord_diagram.png")
+
+        for (database, seizure_types) in self.groups:
+            for seizure_type in seizure_types:
+                invalid_link, aggregated_matrix = self.aggregate_single_group(database, seizure_type)
+                aggregated_matrices.append((database, seizure_type, invalid_link, aggregated_matrix))
+
+        plot_chord_diagram_windows(*tuple(aggregated_matrices), output_file)
+
+    def aggregate_single_inter_group(self, database: str) -> tuple:
+        """
+        Count the number of significant differences per pair-wise
+        comparison (Duns's test, inter analysis). It aggregates across features, brain
+        regions and bands:
+        :param database: name of the database
+        """
+        report_file = glob.glob(f"{self.base_path}/kruskal_{database}*.csv")
+        matrix_length = len(settings["inter_windows_categories"])
+        aggregated_values = [[0.1 for _ in range(matrix_length)] for _ in range(matrix_length)]
+
+        for file in report_file:
+            report_dataframe = pandas.read_csv(file)
+
+            for idx1, stage1 in enumerate(settings["inter_windows_categories"]):
+                for idx2, stage2 in enumerate(settings["inter_windows_categories"]):
+                    column_name = f"{stage1[-1]}-{stage2[-1]}"
+
+                    for _, row in report_dataframe.iterrows():
+                        p_value = row.get(column_name)
+                        if p_value is None or row["feature"] == "Aggregation":
+                            continue
+                        if float(p_value) < 0.05:
+                            aggregated_values[idx1][idx2] += 1
+
+        invalid_links = set()
+        for idx1, row in enumerate(aggregated_values):
+            for idx2, value in enumerate(row):
+                if value == 0.1:
+                    source = settings["inter_windows_categories"][idx1][-1]
+                    target = settings["inter_windows_categories"][idx2][-1]
+                    invalid_links.add((source, target))
+
+        columns = [x[-1] for x in settings["inter_windows_categories"]]
+        matrix_dataframe = pandas.DataFrame(aggregated_values, index=columns, columns=columns)
+        print(matrix_dataframe)
+        return invalid_links, matrix_dataframe
+
+    def windows_based_charts_inter(self) -> None:
+        """
+        Aggregate statistical test results and plot chord diagram
+        """
+        aggregated_matrices = list()
+        output_directory = os.getenv("BIOMARKERS_PROJECT_HOME")
+        output_file = os.path.join(output_directory, "images", "chord_diagram_inter.png")
+
+        for (database, _) in self.groups[1:]:
+            invalid_link, aggregated_matrix = self.aggregate_single_inter_group(database)
+            aggregated_matrices.append((database, invalid_link, aggregated_matrix))
+
+        plot_chord_diagram_windows_inter(*tuple(aggregated_matrices), output_file)
+

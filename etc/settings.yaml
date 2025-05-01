@@ -13,7 +13,7 @@ emg_denoiser_segment_lenght: 10
 emg_denoiser_emg_freq: 20         # Frequency aproximately separating the EEG and EMG bands
 emg_denoiser_ratio: 5             # Ratio of average power in EEG band to average power in the EMG band below which a
                                   # component will be considered to be EMG-related.
-eog_denoiser_sources_tol:         # # Min and max number of sources to remove     
+emg_denoiser_sources_tol:         # # Min and max number of sources to remove     
   - 0
   - 2
 
@@ -47,6 +47,18 @@ intra_windows_categories:
   - [postictal, 30, 3, "31s after"]
   - [postictal, 10, 2, "11s after"]
   - [postictal, 0, 1, "1s after"]
+intra_windows_abbreviations:
+  61s before: 61s bef
+  31s before: 31s bef
+  11s before: 11s bef
+  1s before: 1s bef
+  Start of seizure: Onset
+  Middle point: Middle
+  End of seizure: End
+  61s after: 61 aft
+  31s after: 31s aft
+  11s after: 11s aft
+  1s after: 1s aft
 inter_windows_categories:
   - ["preictal"]
   - ["ictal"]
@@ -234,12 +246,12 @@ tusz:
 
   valid_seizure_types:
     #- absz   # Small amount of events - 6
-    - cpsz
+    #- cpsz
     - fnsz
     - gnsz
     #- spsz   # Small amount of events - 1
     #- tcsz   # Small amount of events - 2
-    - tnsz
+    #- tnsz
 
   channels:
     - Fp1

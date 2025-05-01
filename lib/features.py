@@ -11,7 +11,7 @@ class FeatureGateway():
     def __init__(self):
         pass
 
-    def __call__(self, feature: str, dataset: numpy.array, sampling_frequency: int = None) -> float | numpy.array:
+    def __call__(self, feature: str, dataset: numpy.array, sampling_frequency: int = None) -> float:
         """
         :param feature: name of the feature
         :param dataset: single eeg channel [1 x samples]

@@ -9,6 +9,7 @@ pylint
 python-dotenv
 PyYAML
 pep8-naming
+pycirclize
 scikit-learn
 scikit-posthocs
 scipy

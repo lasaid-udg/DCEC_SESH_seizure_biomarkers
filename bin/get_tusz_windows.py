@@ -39,7 +39,11 @@ def main():
                 logging.error(f"Error in emg denoiser = {exc}")
 
             ###########################################################
-            eeg_slice = EegProcessorBaseClass.rereference_to_average(numpy.abs(eeg_slice))
+            if "_ar" not in patient_metadata[seizure_number]["source_file"]:
+                eeg_slice = EegProcessorBaseClass.rereference_to_average(numpy.abs(eeg_slice))
+            else:
+                eeg_slice = numpy.abs(eeg_slice)
+                logging.info("Average referenced recording, rereferencing skipped")
 
             eeg_slice = EegProcessorBaseClass.standardize(eeg_slice)
 

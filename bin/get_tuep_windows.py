@@ -24,7 +24,7 @@ def main():
         for slice_number in range(len(patient_metadata)):
             logging.info("Processing eeg slice")
             slice_metadata, eeg_slice = slices_tuep.get(patient, slice_number)
-
+ 
             ###########################################################
             eog_denoiser = EogDenoiser(slice_metadata["sampling_frequency"])
             try:
@@ -38,6 +38,12 @@ def main():
             except Exception as exc:
                 logging.error(f"Error in emg denoiser = {exc}")
 
+            ###########################################################
+            if "_ar" not in slice_metadata["source_file"]:
+                eeg_slice = EegProcessorBaseClass.rereference_to_average(numpy.abs(eeg_slice))
+            else:
+                eeg_slice = numpy.abs(eeg_slice)
+                logging.info("Average referenced recording, rereferencing skipped")
             ###########################################################
             eeg_slice = EegProcessorBaseClass.rereference_to_average(numpy.abs(eeg_slice))
 

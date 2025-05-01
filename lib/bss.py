@@ -525,7 +525,7 @@ class EogDenoiser():
             clean_sources = self.remove_low_dimension_sources(sources)
             clean_eeg = self.iwasobi.inverse_transform(clean_sources)
             clean_eegs.append(clean_eeg)
-
+        
         return numpy.concat(aggregated_sources, axis=1), numpy.concat(clean_eegs, axis=1)
 
 
