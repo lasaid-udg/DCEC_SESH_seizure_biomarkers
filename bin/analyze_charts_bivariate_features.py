@@ -14,7 +14,7 @@ sys.path.append("../")
 from lib import settings
 from lib.analyzers import IntraBivariateChbAnalyzer, IntraBivariateSienaAnalyzer, \
                           IntraBivariateTuszAnalyzer, InterBivariateSienaAnalyzer, \
-                          InterBivariateTuszAnalyzer, MlUnivariateFeatureAnalyzer
+                          InterBivariateTuszAnalyzer
 
 
 FEATURE = docopt(__doc__)["--feature"]
@@ -70,8 +70,6 @@ def main():
     for band in ["delta", "theta", "alpha", "beta", "all"]:
         analyzer.bivariate_network_plot_average("unknown", band)
         time.sleep(3)
-    ml_analyzer = MlUnivariateFeatureAnalyzer("chb", FEATURE)
-    ml_analyzer.ml_bar_chart("unknown")
     time.sleep(3)
 
     logging.info("Processing database Siena")
@@ -94,8 +92,6 @@ def main():
         for band in ["delta", "theta", "alpha", "beta", "all"]:
             analyzer.bivariate_network_plot_average(seizure_type, band)
             time.sleep(3)
-        ml_analyzer = MlUnivariateFeatureAnalyzer("siena", FEATURE)
-        ml_analyzer.ml_bar_chart(seizure_type)
         time.sleep(3)
 
     logging.info("Processing database TUSZ")
@@ -118,8 +114,6 @@ def main():
         for band in ["delta", "theta", "alpha", "beta", "all"]:
             analyzer.bivariate_network_plot_average(seizure_type, band)
             time.sleep(3)
-        ml_analyzer = MlUnivariateFeatureAnalyzer("tusz", FEATURE)
-        ml_analyzer.ml_bar_chart(seizure_type)
         time.sleep(3)
 
 

@@ -32,11 +32,11 @@ def main():
         eeg_array = window[:, :]
 
         if FEATURE != "power_spectral_density":
-            delta, theta, alpha, beta = BandEstimator.get_eeg_bands(eeg_array,
+            delta, theta, alpha, beta, gamma = BandEstimator.get_eeg_bands(eeg_array,
                                                                     metadata["sampling_frequency"])
 
-            for band_name, band in zip(["delta", "theta", "alpha", "beta", "all"],
-                                       [delta, theta, alpha, beta, eeg_array]):
+            for band_name, band in zip(["delta", "theta", "alpha", "beta", "gamma", "all"],
+                                       [delta, theta, alpha, beta, gamma, eeg_array]):
                 logging.info(f"Processing band = {band_name}")
 
                 for channel_number, channel_name in enumerate(metadata["channels"]):
@@ -52,7 +52,7 @@ def main():
                 logging.info("Processing instance")
                 densities = feature_estimator(FEATURE, eeg_array[channel_number, :],
                                               metadata["sampling_frequency"])
-                for band_name, density in zip(["delta", "theta", "alpha", "beta", "all"], densities):
+                for band_name, density in zip(["delta", "theta", "alpha", "beta", "gamma", "all"], densities):
                     feature_list.append({"patient": metadata["patient"],
                                          "band": band_name,
                                          "channel": channel_name,

@@ -14,7 +14,7 @@ sys.path.append("../")
 from lib import settings
 from lib.analyzers import IntraUnivariateChbAnalyzer, IntraUnivariateSienaAnalyzer, \
                           IntraUnivariateTuszAnalyzer, InterUnivariateSienaAnalyzer, \
-                          InterUnivariateTuszAnalyzer, MlUnivariateFeatureAnalyzer
+                          InterUnivariateTuszAnalyzer
 
 
 FEATURE = docopt(__doc__)["--feature"]
@@ -22,13 +22,13 @@ OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
 
 
 def main():
-
     logging.info("Processing Siena vs TUEP")
 
     logging.info(f"Processing feature = {FEATURE}")
     analyzer = InterUnivariateSienaAnalyzer(FEATURE)
     analyzer.univariate_zone_bar_chart("frontal")
     analyzer.univariate_zone_violin_chart("frontal")
+    time.sleep(3)
     analyzer.univariate_zone_bar_chart("temporal")
     analyzer.univariate_zone_violin_chart("temporal")
     time.sleep(3)
@@ -67,11 +67,9 @@ def main():
     analyzer.hemisfere_bar_chart("right", "unknown")
     analyzer.hemisfere_dist_chart("right", "unknown")
     time.sleep(3)
-    for band in ["delta", "theta", "alpha", "beta", "all"]:
+    for band in ["delta", "theta", "alpha", "beta", "gamma", "all"]:
         analyzer.univariate_topo_plot_average("unknown", band)
         time.sleep(3)
-    ml_analyzer = MlUnivariateFeatureAnalyzer("chb", FEATURE)
-    ml_analyzer.ml_bar_chart("unknown")
     time.sleep(3)
 
     logging.info("Processing database Siena")
@@ -91,11 +89,9 @@ def main():
         analyzer.region_bar_chart("occipital", seizure_type)
         analyzer.region_dist_chart("occipital", seizure_type)
         time.sleep(3)
-        for band in ["delta", "theta", "alpha", "beta", "all"]:
+        for band in ["delta", "theta", "alpha", "beta", "gamma", "all"]:
             analyzer.univariate_topo_plot_average(seizure_type, band)
             time.sleep(3)
-        ml_analyzer = MlUnivariateFeatureAnalyzer("siena", FEATURE)
-        ml_analyzer.ml_bar_chart(seizure_type)
         time.sleep(3)
 
     logging.info("Processing database TUSZ")
@@ -115,11 +111,9 @@ def main():
         analyzer.region_bar_chart("occipital", seizure_type)
         analyzer.region_dist_chart("occipital", seizure_type)
         time.sleep(3)
-        for band in ["delta", "theta", "alpha", "beta", "all"]:
+        for band in ["delta", "theta", "alpha", "beta", "gamma", "all"]:
             analyzer.univariate_topo_plot_average(seizure_type, band)
             time.sleep(3)
-        ml_analyzer = MlUnivariateFeatureAnalyzer("tusz", FEATURE)
-        ml_analyzer.ml_bar_chart(seizure_type)
         time.sleep(3)
 
 
