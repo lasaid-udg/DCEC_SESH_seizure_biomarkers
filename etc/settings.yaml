@@ -70,6 +70,7 @@ band_specifications:
   - {"cut_frequency": [4, 8],   "order": 4}      # Theta band
   - {"cut_frequency": [8, 12],  "order": 4}      # Alpha band
   - {"cut_frequency": [12, 30], "order": 4}      # Beta band
+  - {"cut_frequency": [30, 70], "order": 4}      # Gamma band
 
 
 ####################################

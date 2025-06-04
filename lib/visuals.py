@@ -212,8 +212,8 @@ def plot_stationarity_bar_chart(stationarity_results: list, windows_lenghths: li
 
 def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                     alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                                    all: pandas.DataFrame,
-                                    output_file: str = None):
+                                    gamma: pandas.DataFrame, all: pandas.DataFrame,
+                                    feature: str, output_file: str = None):
     """
     Plot the eeg univariate features per band
     :param delta:
@@ -227,12 +227,18 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     fig = plt.figure(figsize=(5, 4))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
     hfont = {"fontname": "Times New Roman"}
+    features_map = {"hjorth_mobility": "mobility",
+                    "hjorth_complexity": "complexity",
+                    "katz_fractal_dimension": "katz fd",
+                    "approximate_entropy": "entropy",
+                    "power_spectral_density": "PSD"}
+    feature = features_map.get(feature, feature)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
     seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel")
     ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(a) delta", fontsize=8, **hfont)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -247,7 +253,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel")
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
     ax.axes.get_xaxis().set_ticks([])
     ax.yaxis.set_tick_params(labelsize=6)
@@ -263,10 +269,19 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     ax.yaxis.set_tick_params(labelsize=6)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[2, :])
+    ax = fig.add_subplot(grid_specs[2, 0])
+    seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel")
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
+    ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
+    ax.xaxis.set_tick_params(labelsize=6)
+    ax.yaxis.set_tick_params(labelsize=6)
+    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, 1])
     seaborn.barplot(all, x="time_point", y="value", ax=ax, palette="pastel")
-    ax.set_ylabel("Mean value", fontsize=8)
-    ax.set_xlabel("(e) Original", fontsize=8, **hfont)
+    ax.set_xlabel("(f) Original", fontsize=8, **hfont)
+    ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
@@ -279,15 +294,17 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
 
 def plot_univariate_inter_bar_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                     alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                                    all: pandas.DataFrame,
-                                    output_file: str = None):
+                                    gamma: pandas.DataFrame, all: pandas.DataFrame, 
+                                    feature: str, output_file: str = None):
     """
     Plot the eeg univariate features per band
     :param delta:
     :param theta:
     :param alpha:
     :param beta:
+    :param gamma:
     :param all:
+    :param feature: name of the feature
     :param output_file: if specified the figure will be saved
     """
     grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
@@ -297,7 +314,7 @@ def plot_univariate_inter_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     ax = fig.add_subplot(grid_specs[0, 0])
     seaborn.barplot(delta, x="Group", y="value", ax=ax, palette="pastel")
     ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("a) delta", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
 
@@ -313,11 +330,10 @@ def plot_univariate_inter_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.barplot(alpha, x="Group", y="value", ax=ax, palette="pastel")
     ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("c) alpha", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
@@ -327,16 +343,22 @@ def plot_univariate_inter_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[2, :])
-    seaborn.barplot(all, x="Group", y="value", ax=ax, palette="pastel")
-    ax.set_xlabel("Group \n\n e) Original", fontsize=8)
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax = fig.add_subplot(grid_specs[2, 0])
+    seaborn.barplot(gamma, x="Group", y="value", ax=ax, palette="pastel")
+    ax.set_xlabel("Group \n\n e) gamma", fontsize=8)
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, 1])
+    seaborn.barplot(all, x="Group", y="value", ax=ax, palette="pastel")
+    ax.set_xlabel("Group \n\n f) Original", fontsize=8)
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
@@ -346,44 +368,45 @@ def plot_univariate_inter_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
 
 def plot_univariate_intra_dist_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                      alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                                     all: pandas.DataFrame,
-                                     output_file: str = None):
+                                     gamma: pandas.DataFrame, all: pandas.DataFrame,
+                                     feature: str, output_file: str = None):
     """
     Plot the eeg univariate features per band
     :param delta:
     :param theta:
     :param alpha:
     :param beta:
+    :param gamma:
     :param all:
+    :param feature: name of the feature
     :param output_file: if specified the figure will be saved
     """
-    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
+    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.30)
     fig = plt.figure(figsize=(7, 7))
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
     seaborn.kdeplot(delta, x="value", hue="Time point", ax=ax, palette="pastel")
-    ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("Density", fontsize=8)
     ax.set_xlabel("a) delta", fontsize=8)
     ax.get_legend().remove()
     ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 1])
     seaborn.kdeplot(theta, x="value", hue="Time point", ax=ax, palette="pastel")
-    ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
     ax.set_xlabel("b) theta", fontsize=8)
     ax.get_legend().remove()
     ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.kdeplot(alpha, x="value", hue="Time point", ax=ax, palette="pastel")
     ax.set_ylabel("Density", fontsize=8)
     ax.set_xlabel("c) alpha", fontsize=8)
-    ax.axes.get_xaxis().set_ticks([])
     ax.get_legend().remove()
     ax.yaxis.set_tick_params(labelsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
@@ -392,18 +415,27 @@ def plot_univariate_intra_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     ax = fig.add_subplot(grid_specs[1, 1])
     seaborn.kdeplot(beta, x="value", hue="Time point", ax=ax, palette="pastel")
     ax.set_xlabel("d) beta", fontsize=8)
-    ax.axes.get_xaxis().set_ticks([])
     ax.get_legend().remove()
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[2, :])
-    seaborn.kdeplot(all, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax = fig.add_subplot(grid_specs[2, 0])
+    seaborn.kdeplot(gamma, x="value", hue="Time point", ax=ax, palette="pastel")
     seaborn.move_legend(ax, "upper right", ncol=2)
     ax.set_ylabel("Density", fontsize=8)
-    ax.set_xlabel("Feature value \n\n e) Original", fontsize=8)
+    ax.set_xlabel("Feature value \n\n e) gamma", fontsize=8)
+    ax.get_legend().remove()
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, 1])
+    seaborn.kdeplot(all, x="value", hue="Time point", ax=ax, palette="pastel")
+    seaborn.move_legend(ax, "upper right", ncol=2)
+    ax.set_ylabel("")
+    ax.set_xlabel("Feature value \n\n f) Original", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
     ax.get_legend().set_title(None)
@@ -419,15 +451,17 @@ def plot_univariate_intra_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
 
 def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                      alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                                     all: pandas.DataFrame,
-                                     output_file: str = None):
+                                     gamma: pandas.DataFrame, all: pandas.DataFrame,
+                                     feature: str, output_file: str = None):
     """
     Plot the eeg univariate features per band
     :param delta:
     :param theta:
     :param alpha:
     :param beta:
+    :param gamma:
     :param all:
+    :param feature: name of the feature
     :param output_file: if specified the figure will be saved
     """
     grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.30)
@@ -439,7 +473,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     ax = fig.add_subplot(grid_specs[0, 0])
     seaborn.violinplot(delta, x="value", y="Group", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.set_ylabel("Category", fontsize=8)
+    ax.set_ylabel(f"{feature}".capitalize().replace("_", " "), fontsize=8)
     ax.set_xlabel("(a) delta", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
@@ -458,7 +492,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.violinplot(alpha, x="value", y="Group", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.set_ylabel("Category", fontsize=8)
+    ax.set_ylabel(f"{feature}".capitalize().replace("_", " "), fontsize=8)
     ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
@@ -474,11 +508,21 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     ax.yaxis.set_tick_params(labelsize=6)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[2, :])
+    ax = fig.add_subplot(grid_specs[2, 0])
+    seaborn.violinplot(gamma, x="value", y="Group", ax=ax, palette="pastel",
+                       inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    ax.set_ylabel(f"{feature}".capitalize().replace("_", " "), fontsize=8)
+    ax.set_xlabel("Feature value \n\n (e) gamma", fontsize=8, **hfont)
+    ax.xaxis.set_tick_params(labelsize=6)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, 1])
     seaborn.violinplot(all, x="value", y="Group", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.set_ylabel("Category", fontsize=8)
-    ax.set_xlabel("Feature value \n\n (e) Original", fontsize=8, **hfont)
+    ax.axes.get_yaxis().set_ticks([])
+    ax.set_xlabel("Feature value \n\n (f) Original", fontsize=8, **hfont)
+    ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
     
@@ -621,101 +665,34 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
     plt.show()
 
 
-def plot_univariate_ml_bar_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
-                                 alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                                 all: pandas.DataFrame,
-                                 output_file: str = None):
-    """
-    Plot the accuracy results per band
-    :param delta:
-    :param theta:
-    :param alpha:
-    :param beta:
-    :param all:
-    :param output_file: if specified the figure will be saved
-    """
-    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.15)
-    fig = plt.figure(figsize=(7, 6))
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.barplot(delta, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylim([0, 1])
-    ax.set_ylabel("Accuracy", fontsize=8)
-    ax.set_xlabel("a) delta", fontsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.grid()
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.barplot(theta, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylim([0, 1])
-    ax.set_ylabel("")
-    ax.set_xlabel("b) theta", fontsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.grid()
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.barplot(alpha, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.set_ylabel("Accuracy", fontsize=8)
-    ax.set_xlabel("c) alpha", fontsize=8)
-    ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylim([0, 1])
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.grid()
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.barplot(beta, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.set_xlabel("d) beta", fontsize=8)
-    ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylim([0, 1])
-    ax.set_ylabel("")
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.grid()
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[2, :])
-    seaborn.barplot(all, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.set_ylabel("Accuracy", fontsize=8)
-    ax.set_xlabel("e) Original", fontsize=8)
-    ax.set_ylim([0, 1])
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
-    ax.grid()
-
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
-                    transparent=False, facecolor='white')
-    plt.show()
-
-
 def plot_univariate_inter_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                         alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                                        _: pandas.DataFrame,
-                                        output_file: str = None):
+                                        gamma: pandas.DataFrame, _: pandas.DataFrame,
+                                        feature: str, output_file: str = None):
     """
     Plot the eeg univariate features healthy subject vs patients (per band)
     :param delta:
     :param theta:
     :param alpha:
     :param beta:
+    :param gamma:
+    :param feature: name of the feature
     :param output_file: if specified the figure will be saved
     """
-    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.20)
-    fig = plt.figure(figsize=(7, 5.5))
+    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
+    fig = plt.figure(figsize=(7, 6))
+    features_map = {"hjorth_mobility": "mobility",
+                    "hjorth_complexity": "complexity",
+                    "katz_fractal_dimension": "katz fd",
+                    "approximate_entropy": "entropy",
+                    "power_spectral_density": "PSD"}
+    feature = features_map.get(feature, feature)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
     seaborn.barplot(delta, x="Group", y="value", ax=ax, palette="pastel")
     ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("a) delta", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
 
@@ -730,17 +707,24 @@ def plot_univariate_inter_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.barplot(alpha, x="Group", y="value", ax=ax, palette="pastel")
-    ax.set_ylabel("Mean value", fontsize=8)
-    ax.set_xlabel("Group \n\n c) alpha", fontsize=8)
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
+    ax.set_xlabel("c) alpha", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
     seaborn.barplot(beta, x="Group", y="value", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
-    ax.set_xlabel("Group \n\n d) beta", fontsize=8)
+    ax.set_xlabel("d) beta", fontsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, :])
+    seaborn.barplot(gamma, x="Group", y="value", ax=ax, palette="pastel")
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
+    ax.set_xlabel("Group \n\n e) gamma", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
@@ -753,26 +737,34 @@ def plot_univariate_inter_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
 
 def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                          alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                                         _: pandas.DataFrame,
-                                         output_file: str = None):
+                                         gamma: pandas.DataFrame, _: pandas.DataFrame,
+                                         feature: str, output_file: str = None):
     """
     Plot the eeg univariate features healthy subject vs patients (per band)
     :param delta:
     :param theta:
     :param alpha:
     :param beta:
+    :param gamma:
+    :param feature: name of the feature
     :param output_file: if specified the figure will be saved
     """
-    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.30)
+    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.30)
     fig = plt.figure(figsize=(5, 5.5))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
     hfont = {"fontname": "Times New Roman"}
+    features_map = {"hjorth_mobility": "mobility",
+                    "hjorth_complexity": "complexity",
+                    "katz_fractal_dimension": "katz fd",
+                    "approximate_entropy": "entropy",
+                    "power_spectral_density": "PSD"}
+    feature = features_map.get(feature, feature)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
     seaborn.violinplot(delta, x="value", y="Group", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.set_ylabel("Category", fontsize=8)
+    ax.set_ylabel(feature, fontsize=8)
     ax.set_xlabel("a) delta", fontsize=8, **hfont)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
@@ -791,8 +783,8 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.violinplot(alpha, x="value", y="Group", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.set_ylabel("Category", fontsize=8)
-    ax.set_xlabel("Feature value \n\n c) alpha", fontsize=8, **hfont)
+    ax.set_ylabel(feature, fontsize=8)
+    ax.set_xlabel("c) alpha", fontsize=8, **hfont)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
 
@@ -801,8 +793,17 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     seaborn.violinplot(beta, x="value", y="Group", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     ax.set_ylabel("")
-    ax.set_xlabel("Feature value \n\n d) beta", fontsize=8, **hfont)
+    ax.set_xlabel("d) beta", fontsize=8, **hfont)
     ax.axes.get_yaxis().set_ticks([])
+    ax.xaxis.set_tick_params(labelsize=6)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, :])
+    seaborn.violinplot(gamma, x="value", y="Group", ax=ax, palette="pastel",
+                       inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    ax.set_ylabel(feature, fontsize=8)
+    ax.set_xlabel("Feature value \n\n e) gamma", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -814,6 +815,7 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
 
 def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                         alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                                        gamma: pandas.DataFrame, feature: str,
                                         output_file: str = None):
     """
     Plot the PSD values per band
@@ -821,18 +823,26 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     :param theta:
     :param alpha:
     :param beta:
+    :param gamma:
+    ;param feature: name of the feature
     :param output_file: if specified the figure will be saved
     """
-    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.15)
+    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
     fig = plt.figure(figsize=(5, 4))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
     hfont = {"fontname": "Times New Roman"}
+    features_map = {"hjorth_mobility": "mobility",
+                    "hjorth_complexity": "complexity",
+                    "katz_fractal_dimension": "katz fd",
+                    "approximate_entropy": "entropy",
+                    "power_spectral_density": "PSD"}
+    feature = features_map.get(feature, feature)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
     seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel")
     ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(a) delta", fontsize=8, **hfont)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_ylim([0, 0.7])
@@ -849,19 +859,26 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel")
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
     ax.yaxis.set_tick_params(labelsize=6)
-    ax.xaxis.set_tick_params(labelsize=6)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
     ax.set_ylim([0, 0.7])
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
     seaborn.barplot(beta, x="time_point", y="value", ax=ax, palette="pastel")
-    ax.set_ylabel("Mean value", fontsize=8)
+    ax.axes.get_xaxis().set_ticks([])
     ax.set_xlabel("(d) beta", fontsize=8, **hfont)
     ax.set_ylabel("")
+    ax.yaxis.set_tick_params(labelsize=6)
+    ax.set_ylim([0, 0.7])
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, :])
+    seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel")
+    ax.set_ylabel(f"Mean {feature}", fontsize=8)
+    ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
@@ -875,6 +892,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
 
 def plot_univariate_intra_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                          alpha: pandas.DataFrame, beta: pandas.DataFrame,
+                                         gamma: pandas.DataFrame, feature: str,
                                          output_file: str = None):
     """
     Plot the PDS values per band
@@ -882,10 +900,12 @@ def plot_univariate_intra_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     :param theta:
     :param alpha:
     :param beta:
+    :param gamma:
+    :param feature: name of the feature
     :param output_file: if specified the figure will be saved
     """
-    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.20)
-    fig = plt.figure(figsize=(7, 5))
+    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
+    fig = plt.figure(figsize=(7, 7))
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
@@ -908,8 +928,9 @@ def plot_univariate_intra_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.kdeplot(alpha, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("Density", fontsize=8)
-    ax.set_xlabel("Feature value \n\n c) alpha", fontsize=8)
+    ax.set_xlabel("c) alpha", fontsize=8)
     ax.get_legend().remove()
     ax.yaxis.set_tick_params(labelsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
@@ -917,8 +938,17 @@ def plot_univariate_intra_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
     seaborn.kdeplot(beta, x="value", hue="Time point", ax=ax, palette="pastel")
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
+    ax.set_xlabel("d) beta", fontsize=8)
+    ax.get_legend().remove()
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[2, :])
+    seaborn.kdeplot(gamma, x="value", hue="Time point", ax=ax, palette="pastel")
     seaborn.move_legend(ax, "lower right", ncol=2)
-    ax.set_xlabel("Feature value \n\n d) beta", fontsize=8)
+    ax.set_xlabel("Feature value \n\n e) gamma", fontsize=8)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
@@ -926,69 +956,6 @@ def plot_univariate_intra_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     texts = ax.get_legend().get_texts()
     for t in texts:
         t.set_size('xx-small')
-
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
-                    transparent=False, facecolor='white')
-    plt.show()
-
-
-def plot_univariate_ml_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
-                                     alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                                     _: pandas.DataFrame,
-                                     output_file: str = None):
-    """
-    Plot the accuracy results per band
-    :param delta:
-    :param theta:
-    :param alpha:
-    :param beta:
-    :param output_file: if specified the figure will be saved
-    """
-    grid_specs = GridSpec(2, 2, wspace=0.15, hspace=0.15)
-    fig = plt.figure(figsize=(7, 5))
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.barplot(delta, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylim([0, 1])
-    ax.set_ylabel("Accuracy", fontsize=8)
-    ax.set_xlabel("a) delta", fontsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.grid()
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.barplot(theta, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.axes.get_xaxis().set_ticks([])
-    ax.set_ylim([0, 1])
-    ax.set_ylabel("")
-    ax.set_xlabel("b) theta", fontsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.grid()
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.barplot(alpha, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.set_ylabel("Accuracy", fontsize=8)
-    ax.set_xlabel("c) alpha", fontsize=8)
-    ax.set_ylim([0, 1])
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
-    ax.grid()
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.barplot(beta, x="experiment", y="accuracy", ax=ax, palette="pastel")
-    ax.set_xlabel("d) beta", fontsize=8)
-    ax.set_ylim([0, 1])
-    ax.set_ylabel("")
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
-    ax.grid()
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,

@@ -47,7 +47,7 @@ class FeatureGateway():
         data = numpy.expand_dims(data, axis=0)
         densities = mne_features.univariate.compute_pow_freq_bands(sampling_frequency,
                                                                    data,
-                                                                   numpy.array([0.5, 4., 8., 13., 30.]),
+                                                                   numpy.array([0.5, 4.0, 8.0, 13.0, 30.0, 70.0]),
                                                                    normalize=True,
                                                                    psd_method="welch")
         densities = numpy.append(densities, [0])

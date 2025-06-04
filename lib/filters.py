@@ -101,4 +101,5 @@ class BandEstimator():
         theta = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][1])
         alpha = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][2])
         beta = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][3])
-        return delta, theta, alpha, beta
+        gamma = filter_bank.apply_filter(eeg_array, "bandpass_butter", **settings["band_specifications"][4])
+        return delta, theta, alpha, beta, gamma
