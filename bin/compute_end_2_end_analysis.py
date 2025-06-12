@@ -103,8 +103,8 @@ def main():
                 entropy = feature_estimator("approximate_entropy", window[channel_number, :])
                 feature_value = feature_estimator("power_spectral_density", window[channel_number, :],
                                                   metadata["sampling_frequency"])
-                theta_psd = feature_value[1]
-                alpha_psd = feature_value[2]
+                theta_psd = feature_value[3]
+                alpha_psd = feature_value[4]
 
                 entropy_features.append((channel_name, entropy))
                 theta_psd_features.append((channel_name, theta_psd))
