@@ -280,7 +280,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 1])
     seaborn.barplot(all, x="time_point", y="value", ax=ax, palette="pastel")
-    ax.set_xlabel("(f) Original", fontsize=8, **hfont)
+    ax.set_xlabel("(f) full bandwidth", fontsize=8, **hfont)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
@@ -355,7 +355,7 @@ def plot_univariate_inter_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 1])
     seaborn.barplot(all, x="Group", y="value", ax=ax, palette="pastel")
-    ax.set_xlabel("Group \n\n f) Original", fontsize=8)
+    ax.set_xlabel("Group \n\n f) full bandwidth", fontsize=8)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
@@ -435,7 +435,7 @@ def plot_univariate_intra_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     seaborn.kdeplot(all, x="value", hue="Time point", ax=ax, palette="pastel")
     seaborn.move_legend(ax, "upper right", ncol=2)
     ax.set_ylabel("")
-    ax.set_xlabel("Feature value \n\n f) Original", fontsize=8)
+    ax.set_xlabel("Feature value \n\n f) full bandwidth", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
     ax.get_legend().set_title(None)
@@ -468,6 +468,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     fig = plt.figure(figsize=(5, 5.5))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
     hfont = {'fontname':'Times New Roman'}
+    feature = "skewness" if feature == "skew" else feature
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
@@ -521,7 +522,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     seaborn.violinplot(all, x="value", y="Group", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     ax.axes.get_yaxis().set_ticks([])
-    ax.set_xlabel("Feature value \n\n (f) Original", fontsize=8, **hfont)
+    ax.set_xlabel("Feature value \n\n (f) full bandwidth", fontsize=8, **hfont)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
@@ -875,14 +876,16 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     ax.set_ylim([0, 0.7])
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[2, :])
-    seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel")
+    ax = fig.add_subplot(grid_specs[2, 0])
+    obj_chart = seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel")
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
     ax.set_ylim([0, 0.7])
+
+    print(obj_chart.__dict__)
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
@@ -1074,8 +1077,8 @@ def plot_graph_striplot_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
     """
     grid_specs = GridSpec(2, 2, wspace=0.12, hspace=0.17)
     fig = plt.figure(figsize=(7, 5))
-    order = ["61s before", "31s before", "11s before", "1s before", "Start of seizure",
-             "Middle point", "End of seizure", "1s after", "11s after", "31s after", "61s after"]
+    order = ["61s before", "31s before", "11s before", "1s before", "Onset",
+             "Middle point", "Termination", "1s after", "11s after", "31s after", "61s after"]
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
@@ -1142,8 +1145,8 @@ def plot_graph_pointplot_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
     """
     grid_specs = GridSpec(2, 2, wspace=0.12, hspace=0.17)
     fig = plt.figure(figsize=(7, 5))
-    order = ["61s before", "31s before", "11s before", "1s before", "Start of seizure",
-             "Middle point", "End of seizure", "1s after", "11s after", "31s after", "61s after"]
+    order = ["61s before", "31s before", "11s before", "1s before", "Onset",
+             "Middle point", "Termination", "1s after", "11s after", "31s after", "61s after"]
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
@@ -1256,12 +1259,12 @@ def plot_topoplot_features_frame(impacted_channels: list, entropy_features: list
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 1])
     single_topomap(ax, theta_psd_features, theta_psd_min_value, theta_psd_max_value)
-    ax.set_xlabel("PSD theta band", fontsize=12)
+    ax.set_xlabel("PSD beta band", fontsize=12)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 2])
     single_topomap(ax, alpha_psd_features, alpha_psd_min_value, alpha_psd_max_value)
-    ax.set_xlabel("PSD alpha band", fontsize=12)
+    ax.set_xlabel("PSD gamma band", fontsize=12)
 
     if output_file:
         plt.savefig(output_file, dpi=100, bbox_inches="tight", pad_inches=0.2,
