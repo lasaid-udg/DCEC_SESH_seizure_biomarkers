@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from matplotlib.gridspec import GridSpec
 from scipy.interpolate import griddata
+import matplotlib.patches as mpatches
 from . import settings
 
 
@@ -885,7 +886,15 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
     ax.set_ylim([0, 0.7])
 
-    print(obj_chart.__dict__)
+    #########################################################
+    labels = [label._text for label in ax.get_xticklabels()]
+    colors = [bar._original_facecolor for bar in obj_chart._children if "Rectangle" in str(bar)]
+    patches = [mpatches.Patch(color=color, label=label) for (label, color) in zip(labels, colors)]
+    ax = fig.add_subplot(grid_specs[2, 1])
+    ax.axes.get_xaxis().set_ticks([])
+    ax.axes.get_yaxis().set_ticks([])
+    plt.legend(ncol=2, handles=patches, fontsize="xx-small")
+
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
@@ -1302,6 +1311,16 @@ def plot_chord_diagram_windows(chb_dataset: tuple, siena_dataset: tuple,
                                       link_kws=dict(ec="black", lw=0.5),
                                       link_kws_handler=LinkHandler(invalid_links))
         circos.text(label, fontsize=8, r=115, deg=180, fontname="Times New Roman")
+
+        for sector in circos._sectors:
+            for patch in sector._tracks[0]._patches:
+                if "bef" in sector.name:
+                    patch._facecolor = (0.4, 0.760, 0.647, 1.0)   
+                elif "aft" in sector.name:
+                    patch._facecolor = (0.988, 0.552, 0.384, 1.0)
+                else:
+                    patch._facecolor = (1.0, 0.850, 0.184, 1.0)
+
         return circos
 
     grid_specs = GridSpec(2, 2, wspace=0.1, hspace=0.12)
@@ -1315,7 +1334,7 @@ def plot_chord_diagram_windows(chb_dataset: tuple, siena_dataset: tuple,
     ax = fig.add_subplot(grid_specs[0, 1], polar=True)
     fig = circos_2.plotfig(ax=ax)
 
-    circos_3 = build_circos_object(tusz_gnsz_dataset[-1], tusz_gnsz_dataset[-2], "(c) TUZ (gnsz)")
+    circos_3 = build_circos_object(tusz_gnsz_dataset[-1], tusz_gnsz_dataset[-2], "(c) TUSZ (gnsz)")
     ax = fig.add_subplot(grid_specs[1, 0], polar=True)
     fig = circos_3.plotfig(ax=ax)
 
@@ -1366,6 +1385,58 @@ def plot_chord_diagram_windows_inter(siena_dataset: tuple, tusz_dataset: tuple, 
     circos_2 = build_circos_object(tusz_dataset[-1], tusz_dataset[-2], "(c) TUSZ vs TUEP")
     ax = fig.add_subplot(grid_specs[0, 1], polar=True)
     fig = circos_2.plotfig(ax=ax)
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+
+def plot_heatmap_diagram_windows(chb_dataset: tuple, siena_dataset: tuple,
+                                 tusz_gnsz_dataset: tuple, tusz_fnsz_dataset: tuple,
+                                 output_file: str):
+    """
+    Plot data as a color-encoded matrix
+    :param chb_dataset: [database name, seizure type, dataframe, invalid links]
+    :param siena_dataset: [database name, seizure type, dataframe, invalid links]
+    :param tusz_gnsz_dataset: [database name, seizure type, dataframe, invalid links]
+    :param tusz_gnsz_dataset: [database name, seizure type, dataframe, invalid links]
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(2, 2, wspace=0.20, hspace=0.27)
+    fig = plt.figure(figsize=(8, 8))
+    mask = np.tril(np.ones_like(chb_dataset[-1], dtype=bool))
+    mask[np.diag_indices_from(mask)] = False
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    seaborn.heatmap(chb_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False)
+    ax.set_xlabel("(a) CHB-MIT", fontsize=8)
+    ax.set_ylabel("")
+    ax.yaxis.set_tick_params(labelsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.heatmap(siena_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False)
+    ax.set_xlabel("(b) Siena (IAS)", fontsize=8)
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.heatmap(tusz_gnsz_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False)
+    ax.set_xlabel("(c) TUSZ (gnsz)", fontsize=8)
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
+
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.heatmap(tusz_fnsz_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False)
+    ax.set_xlabel("(d) TUSZ (fnsz)", fontsize=8)
+    ax.set_ylabel("")
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=8)
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,

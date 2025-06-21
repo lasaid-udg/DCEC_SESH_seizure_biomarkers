@@ -14,7 +14,8 @@ from .visuals import plot_univariate_intra_bar_chart, plot_univariate_intra_dist
                      plot_univariate_inter_dist_chart_psd, plot_univariate_intra_bar_chart_psd, \
                      plot_univariate_intra_dist_chart_psd, \
                      plot_network_features_time, plot_graph_striplot_chart, plot_graph_pointplot_chart, \
-                     plot_chord_diagram_windows, plot_chord_diagram_windows_inter
+                     plot_chord_diagram_windows, plot_chord_diagram_windows_inter, \
+                     plot_heatmap_diagram_windows
 
 
 class IntraUnivariateFeatureAnalyzer():
@@ -1112,3 +1113,17 @@ class CirclizerCharts():
 
         plot_chord_diagram_windows_inter(*tuple(aggregated_matrices), output_file)
 
+    def windows_based_heat_map(self) -> None:
+        """
+        Aggregate statistical test results and plot data as a color-encoded matrix
+        """
+        aggregated_matrices = list()
+        output_directory = os.getenv("BIOMARKERS_PROJECT_HOME")
+        output_file = os.path.join(output_directory, "images", "heat_map.png")
+
+        for (database, seizure_types) in self.groups:
+            for seizure_type in seizure_types:
+                invalid_link, aggregated_matrix = self.aggregate_single_group(database, seizure_type)
+                aggregated_matrices.append((database, seizure_type, invalid_link, aggregated_matrix))
+
+        plot_heatmap_diagram_windows(*tuple(aggregated_matrices), output_file)
