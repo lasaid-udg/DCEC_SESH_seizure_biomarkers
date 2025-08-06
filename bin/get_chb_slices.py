@@ -10,6 +10,7 @@ sys.path.append("../")
 from lib.metadata import MetadataListChb
 from lib.signals import EegProcessorChb, EegSlicer
 from lib.filters import FilterBank
+from lib.bss import EogDenoiser, EmgDenoiser
 
 
 OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
@@ -57,6 +58,16 @@ def main():
 
             slicer = EegSlicer(processor.sampling_frequency)
             for slice_metadata, slice_eeg in slicer.compute_slices(seizures["seizures"], processor._data):
+
+                ###########################################################
+                eog_denoiser = EogDenoiser(processor.sampling_frequency)
+                _, slice_eeg = eog_denoiser.apply_by_segments(slice_eeg)
+
+                emg_denoiser = EmgDenoiser(processor.sampling_frequency)
+                _, slice_eeg = emg_denoiser.apply_by_segments(slice_eeg)
+
+                slice_eeg = numpy.real(slice_eeg)
+                ###########################################################
 
                 output_file_eeg = f"{patient}_{seizure_counter}.npy"
                 output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "slices", "chb-mit", output_file_eeg)

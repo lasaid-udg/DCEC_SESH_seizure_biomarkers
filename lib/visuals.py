@@ -234,10 +234,11 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
                     "approximate_entropy": "entropy",
                     "power_spectral_density": "PSD"}
     feature = features_map.get(feature, feature)
+    order = [x[3] for x in settings["intra_windows_categories"]]
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(a) delta", fontsize=8, **hfont)
@@ -245,7 +246,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.barplot(theta, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(theta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
     ax.set_xlabel("(b) theta", fontsize=8, **hfont)
@@ -253,7 +254,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
     ax.axes.get_xaxis().set_ticks([])
@@ -262,7 +263,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.barplot(beta, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(beta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.set_xlabel("(d) beta", fontsize=8, **hfont)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
@@ -271,7 +272,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 0])
-    seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
@@ -280,7 +281,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 1])
-    seaborn.barplot(all, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(all, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.set_xlabel("(f) full bandwidth", fontsize=8, **hfont)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=6)
@@ -310,6 +311,7 @@ def plot_univariate_inter_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     """
     grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
     fig = plt.figure(figsize=(7, 6))
+    seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
@@ -539,8 +541,8 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
                                 stage_5: np.array, stage_6: np.array,
                                 stage_7: np.array, stage_8: np.array,
                                 stage_9: np.array, stage_10: np.array,
-                                stage_11: np.array,
-                                output_file: str = None, is_monopolar: bool = True):
+                                stage_11: np.array, channels: list,
+                                output_file: str = None):
     """
     Plot the topographic map per stage
     :param stage [1-8]: each stage stands for an eeg window
@@ -548,12 +550,8 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
     """
     hfont = {"fontname": "Times New Roman"}
 
-    if is_monopolar:
-        electrode_positions = settings["electrode_positions"]
-        direction = "horizontal"
-    else:
-        electrode_positions = settings["bipolar_electrode_positions"]
-        direction = "vertical"
+    electrode_positions = {x: y for x, y in settings["bipolar_electrode_positions"].items() if x in channels}
+    direction = "vertical"
 
     grid_specs = GridSpec(3, 4, wspace=0.20, hspace=0.10)
     fig = plt.figure(figsize=(8, 6))
@@ -631,23 +629,23 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 3])
-    single_topomap(ax, stage_11[1], min_color, max_color)
-    ax.set_xlabel(f"h) {stage_11[0]}", fontsize=8, **hfont)
+    single_topomap(ax, stage_8[1], min_color, max_color)
+    ax.set_xlabel(f"h) {stage_8[0]}", fontsize=8, **hfont)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 0])
-    single_topomap(ax, stage_10[1], min_color, max_color)
-    ax.set_xlabel(f"i) {stage_10[0]}", fontsize=8, **hfont)
+    single_topomap(ax, stage_9[1], min_color, max_color)
+    ax.set_xlabel(f"i) {stage_9[0]}", fontsize=8, **hfont)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 1])
-    single_topomap(ax, stage_9[1], min_color, max_color)
-    ax.set_xlabel(f"j) {stage_9[0]}", fontsize=8, **hfont)
+    single_topomap(ax, stage_10[1], min_color, max_color)
+    ax.set_xlabel(f"j) {stage_10[0]}", fontsize=8, **hfont)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 2])
-    single_topomap(ax, stage_8[1], min_color, max_color)
-    ax.set_xlabel(f"k) {stage_8[0]}", fontsize=8, **hfont)
+    single_topomap(ax, stage_11[1], min_color, max_color)
+    ax.set_xlabel(f"k) {stage_11[0]}", fontsize=8, **hfont)
 
     norm = matplotlib.colors.Normalize(min_color, max_color)
     ax = fig.add_subplot(grid_specs[2, 3])
@@ -839,10 +837,11 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
                     "approximate_entropy": "entropy",
                     "power_spectral_density": "PSD"}
     feature = features_map.get(feature, feature)
+    order = [x[3] for x in settings["intra_windows_categories"]]
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(a) delta", fontsize=8, **hfont)
@@ -851,7 +850,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.barplot(theta, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(theta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
     ax.set_xlabel("(b) theta", fontsize=8, **hfont)
@@ -860,7 +859,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
@@ -869,7 +868,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.barplot(beta, x="time_point", y="value", ax=ax, palette="pastel")
+    seaborn.barplot(beta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_xlabel("(d) beta", fontsize=8, **hfont)
     ax.set_ylabel("")
@@ -878,7 +877,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 0])
-    obj_chart = seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel")
+    obj_chart = seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
     ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
@@ -975,322 +974,14 @@ def plot_univariate_intra_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     plt.show()
 
 
-def plot_network_features_time(stage_1: np.array, stage_2: np.array,
-                               stage_3: np.array, stage_4: np.array,
-                               stage_5: np.array, stage_6: np.array,
-                               stage_7: np.array, stage_8: np.array,
-                               stage_9: np.array, stage_10: np.array,
-                               stage_11: np.array, line_widths: list,
-                               output_file: str = None, is_monopolar: bool = True):
-    """
-    Plot the network connectivity per stage
-    :param stage [1-8]: each stage stands for an eeg window
-    :param line_widths: weight for each connection
-    :param output_file: if specified the figure will be saved
-    :param is_monopolar: type of channel, monopolar or bipolar
-    """
-    if is_monopolar:
-        electrode_positions = settings["electrode_positions"]
-    else:
-        electrode_positions = settings["bipolar_electrode_positions"]
-
-    grid_specs = GridSpec(3, 4, wspace=0.20, hspace=0.10)
-    fig = plt.figure(figsize=(12, 7))
-
-    def single_network_map(ax_object, network_graph: np.array):
-        positions = {}
-
-        for electrode, coordinate in electrode_positions.items():
-            network_graph.add_node(electrode)
-            positions.update({electrode: tuple(coordinate)})
-
-        networkx.draw_networkx_nodes(network_graph, ax=ax_object, pos=positions, node_size=100)
-        networkx.draw_networkx_edges(network_graph, pos=positions, width=line_widths)
-        ax_object.spines['top'].set_visible(False)
-        ax_object.spines['right'].set_visible(False)
-        ax_object.spines['bottom'].set_visible(False)
-        ax_object.spines['left'].set_visible(False)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 0])
-    single_network_map(ax, stage_1[1])
-    ax.set_xlabel(f"a) {stage_1[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    single_network_map(ax, stage_2[1])
-    ax.set_xlabel(f"b) {stage_2[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 2])
-    single_network_map(ax, stage_3[1])
-    ax.set_xlabel(f"c) {stage_3[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 3])
-    single_network_map(ax, stage_4[1])
-    ax.set_xlabel(f"d) {stage_4[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 0])
-    single_network_map(ax, stage_5[1])
-    ax.set_xlabel(f"e) {stage_5[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 1])
-    single_network_map(ax, stage_6[1])
-    ax.set_xlabel(f"f) {stage_6[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 2])
-    single_network_map(ax, stage_7[1])
-    ax.set_xlabel(f"g) {stage_7[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 3])
-    single_network_map(ax, stage_11[1])
-    ax.set_xlabel(f"h) {stage_11[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[2, 0])
-    single_network_map(ax, stage_10[1])
-    ax.set_xlabel(f"i) {stage_10[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[2, 1])
-    single_network_map(ax, stage_9[1])
-    ax.set_xlabel(f"j) {stage_9[0]}", fontsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[2, 2])
-    single_network_map(ax, stage_8[1])
-    ax.set_xlabel(f"k) {stage_8[0]}", fontsize=8)
-
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
-                    transparent=False, facecolor='white')
-
-    plt.show()
-
-
-def plot_graph_striplot_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
-                              alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                              output_file: str = None):
-    """
-    Plot the global efficiency values per band
-    :param delta:
-    :param theta:
-    :param alpha:
-    :param beta:
-    :param output_file: if specified the figure will be saved
-    """
-    grid_specs = GridSpec(2, 2, wspace=0.12, hspace=0.17)
-    fig = plt.figure(figsize=(7, 5))
-    order = ["61s before", "31s before", "11s before", "1s before", "Onset",
-             "Middle point", "Termination", "1s after", "11s after", "31s after", "61s after"]
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.stripplot(delta, x="value", y="Time point", ax=ax, palette="pastel", order=order, dodge=True,
-                      alpha=.25, zorder=1)
-    seaborn.pointplot(delta, x="value", y="Time point", ax=ax, dodge=0.8 - 0.8 / 3, palette="dark",
-                      errorbar=None, markers="d", markersize=4, linestyle="none", order=order)
-    ax.axes.get_xaxis().set_ticks([])
-    ax.set_xlabel("a) delta", fontsize=8)
-    ax.set_ylabel("")
-    ax.yaxis.set_tick_params(labelsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.stripplot(theta, x="value", y="Time point", ax=ax, palette="pastel", order=order, dodge=True,
-                      alpha=.25, zorder=1)
-    seaborn.pointplot(theta, x="value", y="Time point", ax=ax, dodge=0.8 - 0.8 / 3, palette="dark",
-                      errorbar=None, markers="d", markersize=4, linestyle="none", order=order)
-    ax.axes.get_xaxis().set_ticks([])
-    ax.axes.get_yaxis().set_ticks([])
-    ax.set_xlabel("b) theta", fontsize=8)
-    ax.set_ylabel("")
-    ax.yaxis.set_tick_params(labelsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.stripplot(alpha, x="value", y="Time point", ax=ax, palette="pastel", order=order, dodge=True,
-                      alpha=.25, zorder=1)
-    seaborn.pointplot(alpha, x="value", y="Time point", ax=ax, dodge=0.8 - 0.8 / 3, palette="dark",
-                      errorbar=None, markers="d", markersize=4, linestyle="none", order=order)
-    ax.set_xlabel("Feature value \n\n c) alpha", fontsize=8)
-    ax.set_ylabel("")
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.xaxis.set_tick_params(labelsize=8)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.stripplot(beta, x="value", y="Time point", ax=ax, palette="pastel", order=order, dodge=True,
-                      alpha=.25, zorder=1)
-    seaborn.pointplot(beta, x="value", y="Time point", ax=ax, dodge=0.8 - 0.8 / 3, palette="dark",
-                      errorbar=None, markers="d", markersize=4, linestyle="none", order=order)
-    ax.set_xlabel("Feature value \n\n d) beta", fontsize=8)
-    ax.set_ylabel("")
-    ax.axes.get_yaxis().set_ticks([])
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
-                    transparent=False, facecolor='white')
-    plt.show()
-
-
-def plot_graph_pointplot_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
-                               alpha: pandas.DataFrame, beta: pandas.DataFrame,
-                               ylim: list, output_file: str = None):
-    """
-    Plot the global efficiency values per band
-    :param delta:
-    :param theta:
-    :param alpha:
-    :param beta:
-    :param output_file: if specified the figure will be saved
-    """
-    grid_specs = GridSpec(2, 2, wspace=0.12, hspace=0.17)
-    fig = plt.figure(figsize=(7, 5))
-    order = ["61s before", "31s before", "11s before", "1s before", "Onset",
-             "Middle point", "Termination", "1s after", "11s after", "31s after", "61s after"]
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.pointplot(delta, x="Time point", y="value", hue="seizure_number", ax=ax, palette="dark",
-                      errorbar=None, markers="s", markersize=4, order=order, legend=False)
-    ax.axvline(x=4)
-    ax.axes.get_xaxis().set_ticks([])
-    ax.set_xlabel("a) delta", fontsize=8)
-    ax.set_ylabel("")
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.set_ylim(ylim)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.pointplot(theta, x="Time point", y="value", hue="seizure_number", ax=ax, palette="dark",
-                      errorbar=None, markers="s", markersize=4, order=order, legend=False)
-    ax.axvline(x=4)
-    ax.axes.get_xaxis().set_ticks([])
-    ax.axes.get_yaxis().set_ticks([])
-    ax.set_xlabel("b) theta", fontsize=8)
-    ax.set_ylabel("")
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.set_ylim(ylim)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.pointplot(alpha, x="Time point", y="value", hue="seizure_number", ax=ax, palette="dark",
-                      errorbar=None, markers="s", markersize=4, order=order, legend=False)
-    ax.axvline(x=4)
-    ax.set_xlabel("Feature value \n\n c) alpha", fontsize=8)
-    ax.set_ylabel("")
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
-    ax.set_ylim(ylim)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.pointplot(beta, x="Time point", y="value", hue="seizure_number", ax=ax, palette="dark",
-                      errorbar=None, markers="s", markersize=4, order=order, legend=False)
-    ax.axvline(x=4)
-    ax.set_xlabel("Feature value \n\n d) beta", fontsize=8)
-    ax.set_ylabel("")
-    ax.axes.get_yaxis().set_ticks([])
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-    ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
-    ax.set_ylim(ylim)
-
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
-                    transparent=False, facecolor='white')
-    plt.show()
-
-
-def plot_topoplot_features_frame(impacted_channels: list, entropy_features: list, theta_psd_features: list,
-                                 alpha_psd_features: list, entropy_min_value: float, entropy_max_value: float,
-                                 theta_psd_min_value: float, theta_psd_max_value: float,
-                                 alpha_psd_min_value: float, alpha_psd_max_value: float,
-                                 output_file: str = None):
-    """
-    Plot a single frame of the topographic video
-    :param impacted_chanles: channels displaying a ictal event
-    :param features [entropy, theta psd, alpha psd]: feature value per channel
-    :param min_value [entropy, theta psd, alpha psd]: minimum value across all the frames
-    :param max_value [entropy, theta psd, alpha psd]: maximum value across all the frames
-    :param output_file: if specified the figure will be saved
-    """
-    electrode_positions = settings["electrode_positions"]
-
-    grid_specs = GridSpec(1, 3)
-    fig = plt.figure(figsize=(9, 3))
-    xi, yi = np.mgrid[-1:1:100j, -1:1:100j]
-
-    def single_topomap(ax_object, data_array: list, min_value: float, max_value: float):
-        ax_object.axis((-1.2, 1.2, -1.2, 1.2))
-        circle = Circle([0, 0], radius=1, fill=False)
-        ax_object.add_patch(circle)
-
-        points = []
-        channel_names = [x[0] for x in data_array]
-        channel_values = [x[1] for x in data_array]
-        for channel in channel_names:
-            point = [x * 1.2 for x in electrode_positions[channel]]
-            points.append(point)
-
-        zi = griddata(points, channel_values, (xi, yi), method="cubic")
-        colormap = plt.cm.jet
-        normalize = matplotlib.colors.Normalize(vmin=min_value, vmax=max_value)
-        ax_object.contourf(xi, yi, zi, 10, cmap=colormap, norm=normalize)
-
-        for electrode, coordinate in electrode_positions.items():
-            ax_object.text(coordinate[0], coordinate[1], electrode,
-                           verticalalignment='center',
-                           horizontalalignment='center',
-                           size=12)
-
-        ax_object.axes.get_xaxis().set_ticks([])
-        ax_object.axes.get_yaxis().set_ticks([])
-        ax_object.spines['top'].set_visible(False)
-        ax_object.spines['right'].set_visible(False)
-        ax_object.spines['bottom'].set_visible(False)
-        ax_object.spines['left'].set_visible(False)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 0])
-    single_topomap(ax, entropy_features, entropy_min_value, entropy_max_value)
-    ax.set_xlabel("Approximate entropy", fontsize=12)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    single_topomap(ax, theta_psd_features, theta_psd_min_value, theta_psd_max_value)
-    ax.set_xlabel("PSD beta band", fontsize=12)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[0, 2])
-    single_topomap(ax, alpha_psd_features, alpha_psd_min_value, alpha_psd_max_value)
-    ax.set_xlabel("PSD gamma band", fontsize=12)
-
-    if output_file:
-        plt.savefig(output_file, dpi=100, bbox_inches="tight", pad_inches=0.2,
-                    transparent=False, facecolor='white')
-
-    plt.show()
-
-
 def plot_chord_diagram_windows(chb_dataset: tuple, siena_dataset: tuple,
-                               tusz_gnsz_dataset: tuple, tusz_fnsz_dataset: tuple,
+                               tusz_dataset: tuple,
                                output_file: str):
     """
     Plot a chord diagram for each database
     :param chb_dataset: [database name, seizure type, dataframe, invalid links]
     :param siena_dataset: [database name, seizure type, dataframe, invalid links]
-    :param tusz_gnsz_dataset: [database name, seizure type, dataframe, invalid links]
-    :param tusz_gnsz_dataset: [database name, seizure type, dataframe, invalid links]
+    :param tusz_dataset: [database name, seizure type, dataframe, invalid links]
     :param output_file: if specified the figure will be saved
     """
     class LinkHandler():
@@ -1334,57 +1025,9 @@ def plot_chord_diagram_windows(chb_dataset: tuple, siena_dataset: tuple,
     ax = fig.add_subplot(grid_specs[0, 1], polar=True)
     fig = circos_2.plotfig(ax=ax)
 
-    circos_3 = build_circos_object(tusz_gnsz_dataset[-1], tusz_gnsz_dataset[-2], "(c) TUSZ (gnsz)")
+    circos_3 = build_circos_object(tusz_dataset[-1], tusz_dataset[-2], "(c) TUSZ (gnsz)")
     ax = fig.add_subplot(grid_specs[1, 0], polar=True)
     fig = circos_3.plotfig(ax=ax)
-
-    circos_4 = build_circos_object(tusz_fnsz_dataset[-1], tusz_fnsz_dataset[-2], "(d) TUSZ (fnsz)")
-    ax = fig.add_subplot(grid_specs[1, 1], polar=True)
-    fig = circos_4.plotfig(ax=ax)
-
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
-                    transparent=False, facecolor='white')
-    plt.show()
-
-
-def plot_chord_diagram_windows_inter(siena_dataset: tuple, tusz_dataset: tuple, output_file: str):
-    """
-    Plot a chord diagram for each database
-    :param siena_dataset: [database name, seizure type, dataframe, invalid links]
-    :param tusz_dataset: [database name, seizure type, dataframe, invalid links]
-    :param output_file: if specified the figure will be saved
-    """
-    class LinkHandler():
-        def __init__(self, invalid_links):
-            self.invalid_links = invalid_links
-        
-        def __call__(self, source_sector, destine_sector):
-            if (source_sector, destine_sector) in self.invalid_links:
-                return dict(alpha=0)
-
-    def build_circos_object(dataset: pandas.DataFrame, invalid_links: set, label: str):
-        circos = Circos.chord_diagram(dataset,
-                                      space=3,
-                                      r_lim=(85, 100),
-                                      cmap="Set2",
-                                      ticks_interval=500,
-                                      label_kws=dict(r=90, size=8, color="black"),
-                                      link_kws=dict(ec="black", lw=0.5),
-                                      link_kws_handler=LinkHandler(invalid_links))
-        circos.text(label, fontsize=8, r=115, deg=180, fontname="Times New Roman")
-        return circos
-
-    grid_specs = GridSpec(1, 2, wspace=0.1, hspace=0.12)
-    fig = plt.figure(figsize=(8, 4))
-
-    circos_1 = build_circos_object(siena_dataset[-1], siena_dataset[-2], "(a) Siena vs TUEP")
-    ax = fig.add_subplot(grid_specs[0, 0], polar=True)
-    fig = circos_1.plotfig(ax=ax)
-
-    circos_2 = build_circos_object(tusz_dataset[-1], tusz_dataset[-2], "(c) TUSZ vs TUEP")
-    ax = fig.add_subplot(grid_specs[0, 1], polar=True)
-    fig = circos_2.plotfig(ax=ax)
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
@@ -1393,47 +1036,39 @@ def plot_chord_diagram_windows_inter(siena_dataset: tuple, tusz_dataset: tuple, 
 
 
 def plot_heatmap_diagram_windows(chb_dataset: tuple, siena_dataset: tuple,
-                                 tusz_gnsz_dataset: tuple, tusz_fnsz_dataset: tuple,
-                                 output_file: str):
+                                 tusz_dataset: tuple,  output_file: str):
     """
     Plot data as a color-encoded matrix
     :param chb_dataset: [database name, seizure type, dataframe, invalid links]
     :param siena_dataset: [database name, seizure type, dataframe, invalid links]
-    :param tusz_gnsz_dataset: [database name, seizure type, dataframe, invalid links]
-    :param tusz_gnsz_dataset: [database name, seizure type, dataframe, invalid links]
+    :param tusz_dataset: [database name, seizure type, dataframe, invalid links]
     :param output_file: if specified the figure will be saved
     """
     grid_specs = GridSpec(2, 2, wspace=0.20, hspace=0.27)
     fig = plt.figure(figsize=(8, 8))
-    mask = np.tril(np.ones_like(chb_dataset[-1], dtype=bool))
+    mask = np.triu(np.ones_like(chb_dataset[-1], dtype=bool))
     mask[np.diag_indices_from(mask)] = False
+    hfont = {"fontname": "Times New Roman"}
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.heatmap(chb_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False)
-    ax.set_xlabel("(a) CHB-MIT", fontsize=8)
+    seaborn.heatmap(chb_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False, vmin=0, vmax=15)
+    ax.set_xlabel("(a) CHB-MIT", fontsize=8, **hfont)
     ax.set_ylabel("")
     ax.yaxis.set_tick_params(labelsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
 
     ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.heatmap(siena_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False)
-    ax.set_xlabel("(b) Siena (IAS)", fontsize=8)
+    seaborn.heatmap(siena_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False, vmin=0, vmax=15)
+    ax.set_xlabel("(b) Siena", fontsize=8, **hfont)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
 
     ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.heatmap(tusz_gnsz_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False)
-    ax.set_xlabel("(c) TUSZ (gnsz)", fontsize=8)
-    ax.set_ylabel("")
-    ax.xaxis.set_tick_params(labelsize=8)
-    ax.yaxis.set_tick_params(labelsize=8)
-
-    ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.heatmap(tusz_fnsz_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False)
-    ax.set_xlabel("(d) TUSZ (fnsz)", fontsize=8)
+    seaborn.heatmap(tusz_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False, vmin=0, vmax=15)
+    ax.set_xlabel("(c) TUSZ", fontsize=8, **hfont)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)

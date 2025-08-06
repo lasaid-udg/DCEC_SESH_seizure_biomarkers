@@ -426,6 +426,164 @@ class CanonicalCorrelation():
         return numpy.dot(self.mixing_matrix, sources)
 
 
+class CommonSubspaceDecomposition():
+
+    def __init__(self):
+        pass
+
+    def get_eigenvalues_ratio_criteria(self, singular_values: list) -> int:
+        return 2
+    
+    def sign_flip(self, input_signal, left_vectors, transposed_right_vectors, singular_values):
+        left_sk = []
+        for k in range(input_signal.shape[0]):
+            aggregated_sum = 0
+            for m in range(input_signal.shape[0]):
+                if m == k:
+                    continue
+                aggregated_sum += singular_values[m] * numpy.dot(left_vectors[:, m], transposed_right_vectors[:, m])
+                print(aggregated_sum)
+            y = input_signal - aggregated_sum
+            
+            sk_left = 0
+            for j in range(input_signal.shape[0]):            
+                sk_left = numpy.sign(numpy.dot(left_vectors[:, j], y[:, j])) * numpy.dot(left_vectors[:, j], y[:, j])**2
+            left_sk.append(sk_left)
+        print(left_sk)
+
+    def fit_transform(self, dataset_even: numpy.array, dataset_odd: numpy.array) -> Tuple[numpy.array, numpy.array]:
+        """
+        Implementation of the Common Subspace Specific Decomposition
+        :param dataset_even: channels from the right hemisphere
+        :param dataset_odd: channels from the left hemisphere
+        """
+        covariance_right = numpy.dot(dataset_even, numpy.transpose(dataset_even))
+        covariance_left = numpy.dot(dataset_odd, numpy.transpose(dataset_odd))
+
+        eigenvalues_right, eigenvectors_right = numpy.linalg.eig(covariance_right)
+        eigenvalues_left, eigenvectors_left = numpy.linalg.eig(covariance_left)
+
+        diag_eigenvalues_right = numpy.sqrt(numpy.diag(eigenvalues_right))
+        diag_eigenvalues_left = numpy.sqrt(numpy.diag(eigenvalues_left))
+
+        inverse_diag_eigenvalues_right = numpy.sqrt(numpy.linalg.inv(numpy.diag(eigenvalues_right)))
+        inverse_diag_eigenvalues_left = numpy.sqrt(numpy.linalg.inv(numpy.diag(eigenvalues_left)))
+
+        whitened_right = numpy.dot(numpy.dot(inverse_diag_eigenvalues_right, eigenvectors_right), dataset_even)
+        whitened_left = numpy.dot(numpy.dot(inverse_diag_eigenvalues_left, eigenvectors_left), dataset_odd)
+
+        combined_right_left = numpy.dot(whitened_right, numpy.transpose(whitened_left))
+        left_vectors_vz, singular_values, transposed_right_vectors_wz = numpy.linalg.svd(combined_right_left)
+        #transposed_right_vectors_wz = numpy.transpose(transposed_right_vectors_wz)
+
+        self.sign_flip(combined_right_left, left_vectors_vz, transposed_right_vectors_wz, singular_values)
+
+        rotated_right = numpy.dot(numpy.transpose(left_vectors_vz), whitened_right)
+        rotated_left = numpy.dot(transposed_right_vectors_wz, whitened_left)
+
+        index = self.get_eigenvalues_ratio_criteria(singular_values)
+        common_right = numpy.dot(numpy.dot(numpy.dot(eigenvectors_right,
+                                                     diag_eigenvalues_right),
+                                           left_vectors_vz[:, :index]),
+                                 rotated_right[:index, :])
+        common_left = numpy.dot(numpy.dot(numpy.dot(eigenvectors_left,
+                                                    diag_eigenvalues_left),
+                                           left_vectors_vz[:, :index]),
+                                 rotated_left[:index, :])
+
+        specific_right = dataset_even - common_right
+        specific_left = dataset_odd - common_left
+
+        return common_right, common_left, specific_right, specific_left
+
+
+class CssdDenoiser():
+
+    def __init__(self, dataset: str, sampling_frequency: int):
+        """
+        :param dataset: name of the dataset
+        :param sampling_frequency: sampling_frequency [Hz]
+        """
+        self.sampling_frequency = sampling_frequency
+        self.segment_lenght = settings["cssd_denoiser_segment_lenght"]
+        self.channels = self.select_channels(settings[dataset]["channels"])
+
+    def __str__(self):
+        return "hola"
+    
+    def select_channels(self, channels: list) -> dict:
+        grouped_channels = {}
+        for idx, channel in enumerate(channels):
+            try:
+                group = int(channel[-1]) % 2
+                grouped_channels[idx] = group
+            except:
+                pass
+        return grouped_channels
+
+    def fit_cssd(self, segment: numpy.array) -> numpy.array:
+        """
+        Estimate the sources for a single eeg segment
+        :param segment: matrix with the eeg sources [sources x samples]
+        """
+        segment = segment - numpy.mean(segment, axis=1).reshape(-1, 1)
+        
+        dataset_even, dataset_odd = [], []
+        for idx, channel in enumerate(range(segment.shape[0])):
+            if idx not in self.channels:
+                continue
+            if self.channels[idx] == 0:
+                dataset_even.append(segment[channel, :])
+            if self.channels[idx] == 1:
+                dataset_odd.append(segment[channel, :])
+
+        cssd = CommonSubspaceDecomposition()
+        common_even, common_odd, _, _ = cssd.fit_transform(numpy.vstack(dataset_even),
+                                                           numpy.vstack(dataset_odd))
+        
+        count_even = 0
+        count_odd = 0
+        segment_common = numpy.copy(segment)
+        for channel, group in self.channels.items():
+            if group == 0:
+                segment_common[channel, :] = common_even[count_even]
+                count_even += 1
+            elif group == 1:
+                segment_common[channel, :] = common_odd[count_odd]
+                count_odd += 1
+
+        return segment, segment_common
+        cssd = CommonSubspaceDecomposition()
+        common_noise, common_noise, specific_eeg, specific_noise = cssd.fit_transform(segment,
+                                                                                      segment_common)
+
+        return segment_common, specific_eeg
+
+    def apply_by_segments(self, eeg_array: numpy.array) -> numpy.array:
+        """
+        Remove the common (artefact) sources by splitting the eeg recording
+        into smaller windows. Each window is processed independently.
+        :param eeg_array: [channels x samples]
+        """
+        segments = []
+        segment_lenght = self.segment_lenght * self.sampling_frequency
+        next_idx = segment_lenght
+
+        for previous_idx in range(0, eeg_array.shape[1], segment_lenght):
+            segment = eeg_array[:, previous_idx: next_idx]
+            segments.append(segment)
+            next_idx += segment_lenght
+
+        aggregated_common_sources = []
+        aggregated_specific_sources = []
+        for segment in segments:
+            common_sources, specific_sources = self.fit_cssd(segment)
+            aggregated_common_sources.append(numpy.copy(numpy.real(common_sources)))
+            aggregated_specific_sources.append(numpy.copy(numpy.real(specific_sources)))
+        
+        return numpy.concat(aggregated_common_sources, axis=1), numpy.concat(aggregated_specific_sources, axis=1)
+
+
 class EogDenoiser():
 
     def __init__(self, sampling_frequency: int):
@@ -575,9 +733,12 @@ class EmgDenoiser():
                                                         nfft=nfft_length)
 
             idx = [x for x, _ in enumerate(freq_range) if x > self.frequency_emg][0]
-            eeg_band_power = numpy.mean(source_psd[:idx])
-            emg_band_power = numpy.mean(source_psd[idx:])
-            ratio = eeg_band_power / emg_band_power
+
+            width = numpy.diff(freq_range[:idx + 1])
+            eeg_band_power = numpy.dot(width, source_psd[:idx])
+            width = numpy.diff(freq_range[idx:])
+            emg_band_power = numpy.dot(width, source_psd[idx + 1:])
+            ratio = emg_band_power / eeg_band_power
             self.psd_ratio.append(ratio)
 
         self.psd_ratio = numpy.array(self.psd_ratio)
@@ -591,8 +752,9 @@ class EmgDenoiser():
         self.psd_ratio = self.psd_ratio[sorted_indices]
 
         limit_index = 0
-        for i in self.psd_ratio:
-            if i > self.ratio:
+        for idx in range(1, len(self.psd_ratio) - 1):
+            if self.psd_ratio[idx] > self.ratio:
+                limit_index = idx
                 break
 
         if limit_index < self.sources_tol[0]:

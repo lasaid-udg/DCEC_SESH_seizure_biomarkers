@@ -14,6 +14,7 @@ class MetadataChb():
         """
         :param file: path to the metadata file
         """
+        self.seizure_types = settings["chb-mit"]["seizure_types"]
         self.seizure_ranges = file
 
     @property
@@ -28,6 +29,8 @@ class MetadataChb():
         """
         self._seizure_ranges = {}
         clean_lines, single_file = [], []
+        filename = file.split("/")[-1][:-1]
+        patient_id = filename.split("-")[0]
 
         with open(file) as fp:
             lines = fp.readlines()
@@ -55,14 +58,15 @@ class MetadataChb():
             clean_lines.append(single_file)
 
         for _file in clean_lines:
-            filename, seizures = self.get_seizure_single_file(_file)
+            filename, seizures = self.get_seizure_single_file(_file, patient_id)
             self._seizure_ranges.update({filename: {"full_file": os.path.join(*(["/"] + file.split("/")[:-1] + [filename])),
                                                     "seizures": seizures}})
 
-    def get_seizure_single_file(self, text_lines: list) -> Tuple[str, tuple]:
+    def get_seizure_single_file(self, text_lines: list, patient_id: str) -> Tuple[str, tuple]:
         """
         Detect the [start_time, end_time] for each seizure
         :param text_lines: content of the metadata file
+        :param patient_id: id of the patient
         """
         seizures = [(0.0, 0.0, "NULL")]
         filename = re.search(r"(?<=:)\s.+", text_lines[0]).group(0).strip()
@@ -76,7 +80,8 @@ class MetadataChb():
             start = int(re.findall(r"(?<=:\s)[0-9]+", text)[0])
             text = text_lines[(idx + 1) * 2 + 1]
             end = int(re.findall(r"(?<=:\s)[0-9]+", text)[0])
-            seizures.append((start, end, "NULL"))
+            seizures.append((start, end, self.seizure_types[patient_id]))
+
         return filename, tuple(seizures)
 
 
@@ -147,7 +152,24 @@ class MetadataTusz():
         """
         :param files: list of paths to the metadata file
         """
+        self.channels_map = settings["tusz"]["univariate_channels_groups"]
         self.seizure_ranges = files
+
+    @property
+    def channels_map(self) -> dict:
+        return self._channels_map
+
+    @channels_map.setter
+    def channels_map(self, channels_groups: dict) -> None:
+        """
+        Create a reverse lookup to map each channel to its
+        respective hemisphere
+        :param channels: channels per hemisphere
+        """
+        self._channels_map = dict()
+        for hemisphere, channels in channels_groups.items():
+            for channel in channels:
+                self._channels_map[channel.lower()] = hemisphere
 
     @property
     def seizure_ranges(self) -> dict:
@@ -206,18 +228,24 @@ class MetadataTusz():
             if "z" not in event:
                 continue
             line_parts = event.split(",")
-            seizure_types.add(tuple([float(line_parts[1]), float(line_parts[2]), line_parts[3]]))
+            seizure_types.add(tuple([float(line_parts[1]), float(line_parts[2]), line_parts[0].lower()]))
 
         for seizure_range in seizure_ranges:
-            top_seizure_type = list()
+            top_seizure_type = set()
             for seizure_type in seizure_types:
                 if seizure_range[1] < seizure_type[0]:
                     continue
                 if seizure_range[0] > seizure_type[1]:
                     continue
-                top_seizure_type.append(seizure_type[2])
-            top_type = max(set(top_seizure_type), key=top_seizure_type.count)
-            seizure_range[2] = top_type
+
+                if seizure_type[2] in self.channels_map:
+                    top_seizure_type.add(self.channels_map[seizure_type[2]])
+            if len(top_seizure_type) == 2:
+                seizure_range[2] = "bilateral"
+            elif "right" in top_seizure_type:
+                seizure_range[2] = "right"
+            elif "left" in top_seizure_type:
+                seizure_range[2] = "left"
 
         return seizure_ranges
 

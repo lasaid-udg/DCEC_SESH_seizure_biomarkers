@@ -15,7 +15,7 @@ from lib import settings
 from lib.stats import StatisticalTests
 from lib.analyzers import IntraUnivariateChbAnalyzer, IntraUnivariateSienaAnalyzer, \
                           IntraUnivariateTuszAnalyzer, InterUnivariateSienaAnalyzer, \
-                          InterUnivariateTuszAnalyzer
+                          InterUnivariateTuszAnalyzer, InterUnivariateChbAnalyzer
 
 
 FEATURE = docopt(__doc__)["--feature"]
@@ -26,34 +26,57 @@ def main():
 
     stats_gateway = StatisticalTests()
 
+    logging.info("Processing database CHB-MT vs TUEP")
+    test_results = []
+
+    logging.info(f"Processing feature = {FEATURE}")
+    analyzer = InterUnivariateChbAnalyzer(FEATURE)
+    groups = analyzer.processed_data_for_kruskal_wallis()
+
+    for band, features in groups.items():
+        try:
+            kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(features)
+        except ValueError as exc:
+            logging.error(f"Error in Kruskal-Wallis test = {exc}")
+            continue
+        dunn_p_values = stats_gateway.run_posthoc_dunns(features)
+        test_result = {"feature": FEATURE,
+                       "band": band,
+                       "kruskal_p_value": kruskal_p_value}
+        test_result.update({key: value for (key, value) in dunn_p_values})
+        test_results.append(test_result)
+
+    output_file = f"kruskal_chb_inter_{FEATURE}.csv"
+    output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
+
+    normalized_stationarity_evaluation = pandas.DataFrame(test_results)
+    normalized_stationarity_evaluation.to_csv(output_file, index=False)
+
+    ########################################################################
     logging.info("Processing database Siena vs TUEP")
     test_results = []
 
     logging.info(f"Processing feature = {FEATURE}")
     analyzer = InterUnivariateSienaAnalyzer(FEATURE)
+    groups = analyzer.processed_data_for_kruskal_wallis()
 
-    for region in ["frontal", "temporal", "parietal", "occipital"]:
-        groups = analyzer.processed_data_for_kruskal_wallis(region)
-
-        for group in groups:
-            try:
-                kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(group[1])
-            except ValueError as exc:
-                logging.error(f"Error in Kruskal-Wallis test = {exc}")
-                continue
-            dunn_p_values = stats_gateway.run_posthoc_dunns(group[1])
-            test_result = {"feature": FEATURE,
-                           "region": region,
-                           "band": group[0],
-                           "kruskal_p_value": kruskal_p_value}
-            test_result.update({key: value for (key, value) in dunn_p_values})
-            test_results.append(test_result)
+    for band, features in groups.items():
+        try:
+            kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(features)
+        except ValueError as exc:
+            logging.error(f"Error in Kruskal-Wallis test = {exc}")
+            continue
+        dunn_p_values = stats_gateway.run_posthoc_dunns(features)
+        test_result = {"feature": FEATURE,
+                       "band": band,
+                       "kruskal_p_value": kruskal_p_value}
+        test_result.update({key: value for (key, value) in dunn_p_values})
+        test_results.append(test_result)
 
     output_file = f"kruskal_siena_inter_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
 
     normalized_stationarity_evaluation = pandas.DataFrame(test_results)
-    normalized_stationarity_evaluation
     normalized_stationarity_evaluation.to_csv(output_file, index=False)
 
     ########################################################################
@@ -63,22 +86,20 @@ def main():
     logging.info(f"Processing feature = {FEATURE}")
     analyzer = InterUnivariateTuszAnalyzer(FEATURE)
 
-    for region in ["frontal", "temporal", "parietal", "occipital"]:
-        groups = analyzer.processed_data_for_kruskal_wallis(region)
+    groups = analyzer.processed_data_for_kruskal_wallis()
 
-        for group in groups:
-            try:
-                kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(group[1])
-            except ValueError as exc:
-                logging.error(f"Error in Kruskal-Wallis test = {exc}")
-                continue
-            dunn_p_values = stats_gateway.run_posthoc_dunns(group[1])
-            test_result = {"feature": FEATURE,
-                           "region": region,
-                           "band": group[0],
-                           "kruskal_p_value": kruskal_p_value}
-            test_result.update({key: value for (key, value) in dunn_p_values})
-            test_results.append(test_result)
+    for band, features in groups.items():
+        try:
+            kruskal_p_value, _ = stats_gateway.run_kruskal_wallis(features)
+        except ValueError as exc:
+            logging.error(f"Error in Kruskal-Wallis test = {exc}")
+            continue
+        dunn_p_values = stats_gateway.run_posthoc_dunns(features)
+        test_result = {"feature": FEATURE,
+                        "band": band,
+                        "kruskal_p_value": kruskal_p_value}
+        test_result.update({key: value for (key, value) in dunn_p_values})
+        test_results.append(test_result)
 
     output_file = f"kruskal_tusz_inter_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
@@ -93,24 +114,21 @@ def main():
     logging.info(f"Processing feature = {FEATURE}")
     analyzer = IntraUnivariateChbAnalyzer(FEATURE)
 
-    for region in ["left", "right"]:
-        groups = analyzer.processed_data_for_friedman(region, "unknown")
+    groups = analyzer.processed_data_for_friedman()
 
-        for group in groups:
-            try:
-                friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
-            except ValueError as exc:
-                logging.error(f"Error in Friedmam test = {exc}")
-                continue
-            nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
-            test_result = {"feature": FEATURE,
-                           "seizure_type": "unknown",
-                           "group_size": len(group[1][0]),
-                           "region": region,
-                           "band": group[0],
-                           "friedman_p_value": friedman_p_value}
-            test_result.update({key: value for (key, value) in nemenyi_p_values})
-            test_results.append(test_result)
+    for group in groups:
+        try:
+            friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+        except ValueError as exc:
+            logging.error(f"Error in Friedmam test = {exc}")
+            continue
+        nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
+        test_result = {"feature": FEATURE,
+                        "group_size": len(group[1][0]),
+                        "band": group[0],
+                        "friedman_p_value": friedman_p_value}
+        test_result.update({key: value for (key, value) in nemenyi_p_values})
+        test_results.append(test_result)
 
     output_file = f"friedman_chb_intra_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
@@ -125,25 +143,21 @@ def main():
     logging.info(f"Processing feature = {FEATURE}")
     analyzer = IntraUnivariateSienaAnalyzer(FEATURE)
 
-    for seizure_type in settings["siena"]["valid_seizure_types"]:
-        for region in ["frontal", "temporal", "parietal", "occipital"]:
-            groups = analyzer.processed_data_for_friedman(region, seizure_type)
+    groups = analyzer.processed_data_for_friedman()
 
-            for group in groups:
-                try:
-                    friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
-                except ValueError as exc:
-                    logging.error(f"Error in Friedmam test = {exc}")
-                    continue
-                nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
-                test_result = {"feature": FEATURE,
-                               "seizure_type": seizure_type,
-                               "group_size": len(group[1][0]),
-                               "region": region,
-                               "band": group[0],
-                               "friedman_p_value": friedman_p_value}
-                test_result.update({key: value for (key, value) in nemenyi_p_values})
-                test_results.append(test_result)
+    for group in groups:
+        try:
+            friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+        except ValueError as exc:
+            logging.error(f"Error in Friedmam test = {exc}")
+            continue
+        nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
+        test_result = {"feature": FEATURE,
+                       "group_size": len(group[1][0]),
+                       "band": group[0],
+                       "friedman_p_value": friedman_p_value}
+        test_result.update({key: value for (key, value) in nemenyi_p_values})
+        test_results.append(test_result)
 
     output_file = f"friedman_siena_intra_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
@@ -158,25 +172,21 @@ def main():
     logging.info(f"Processing feature = {FEATURE}")
     analyzer = IntraUnivariateTuszAnalyzer(FEATURE)
 
-    for seizure_type in settings["tusz"]["valid_seizure_types"]:
-        for region in ["frontal", "temporal", "parietal", "occipital"]:
-            groups = analyzer.processed_data_for_friedman(region, seizure_type)
+    groups = analyzer.processed_data_for_friedman()
 
-            for group in groups:
-                try:
-                    friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
-                except ValueError as exc:
-                    logging.error(f"Error in Friedmam test = {exc}")
-                    continue
-                nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
-                test_result = {"feature": FEATURE,
-                               "seizure_type": seizure_type,
-                               "group_size": len(group[1][0]),
-                               "region": region,
-                               "band": group[0],
-                               "friedman_p_value": friedman_p_value}
-                test_result.update({key: value for (key, value) in nemenyi_p_values})
-                test_results.append(test_result)
+    for group in groups:
+        try:
+            friedman_p_value, _ = stats_gateway.run_friedman_test(group[1])
+        except ValueError as exc:
+            logging.error(f"Error in Friedmam test = {exc}")
+            continue
+        nemenyi_p_values = stats_gateway.run_posthoc_nemenyi(group[1])
+        test_result = {"feature": FEATURE,
+                        "group_size": len(group[1][0]),
+                        "band": group[0],
+                        "friedman_p_value": friedman_p_value}
+        test_result.update({key: value for (key, value) in nemenyi_p_values})
+        test_results.append(test_result)
 
     output_file = f"friedman_tusz_intra_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)

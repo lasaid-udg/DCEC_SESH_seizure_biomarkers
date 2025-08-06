@@ -9,7 +9,6 @@ warnings.filterwarnings("ignore")
 sys.path.append("../")
 from lib.slices import WindowSelector, EegSlicesTusz
 from lib.signals import EegProcessorBaseClass
-from lib.bss import EogDenoiser, EmgDenoiser
 
 
 OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
@@ -26,25 +25,6 @@ def main():
             seizure_metadata, eeg_slice = slices_tusz.get(patient, seizure_number)
 
             ###########################################################
-            eog_denoiser = EogDenoiser(seizure_metadata["sampling_frequency"])
-            try:
-                _, eeg_slice = eog_denoiser.apply_by_segments(eeg_slice)
-            except Exception as exc:
-                logging.error(f"Error in emg denoiser = {exc}")
-
-            emg_denoiser = EmgDenoiser(seizure_metadata["sampling_frequency"])
-            try:
-                _, eeg_slice = emg_denoiser.apply_by_segments(eeg_slice)
-            except Exception as exc:
-                logging.error(f"Error in emg denoiser = {exc}")
-
-            ###########################################################
-            if "_ar" not in patient_metadata[seizure_number]["source_file"]:
-                eeg_slice = EegProcessorBaseClass.rereference_to_average(numpy.abs(eeg_slice))
-            else:
-                eeg_slice = numpy.abs(eeg_slice)
-                logging.info("Average referenced recording, rereferencing skipped")
-
             eeg_slice = EegProcessorBaseClass.standardize(eeg_slice)
 
             selector = WindowSelector(seizure_metadata["sampling_frequency"])

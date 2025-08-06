@@ -46,7 +46,6 @@
 #./analyze_stats_univariate_features.py --feature=hjorth_mobility
 #./analyze_charts_univariate_features.py --feature=hjorth_mobility
 
-
 #################################################################
 #./compute_chb_univariate_features.py --feature=hjorth_complexity
 #./compute_siena_univariate_features.py --feature=hjorth_complexity
@@ -80,7 +79,7 @@
 #./estimate_data_normality.py --feature=approximate_entropy
 
 #./analyze_stats_univariate_features.py --feature=approximate_entropy
-#./analyze_charts_univariate_features.py --feature=approximate_entropy
+./analyze_charts_univariate_features.py --feature=approximate_entropy
 
 
 #################################################################
@@ -93,33 +92,3 @@
 
 #./analyze_stats_univariate_features.py --feature=power_spectral_density
 #./analyze_charts_univariate_features.py --feature=power_spectral_density
-
-
-#################################################################
-#./compute_chb_bivariate_features.py --feature=coherence
-#./compute_siena_bivariate_features.py --feature=coherence
-#./compute_tusz_bivariate_features.py --feature=coherence
-#./compute_tuep_bivariate_features.py --feature=phase_lock_value
-
-#./analyze_stats_bivariate_features.py --feature=coherence
-#./analyze_charts_bivariate_features.py --feature=coherence
-
-
-#################################################################
-#./compute_chb_bivariate_features.py --feature=phase_lock_value
-#./compute_siena_bivariate_features.py --feature=phase_lock_value
-#./compute_tusz_bivariate_features.py --feature=phase_lock_value
-#./compute_tuep_bivariate_features.py --feature=phase_lock_value
-
-#./analyze_stats_bivariate_features.py --feature=phase_lock_value
-#./analyze_charts_bivariate_features.py --feature=phase_lock_value
-
-
-#################################################################
-#./compute_graph_features.py --feature=coherence --threshold=0.3
-#./compute_graph_features.py --feature=coherence --threshold=0.5
-#./compute_graph_features.py --feature=coherence --threshold=0.7
-
-#./compute_graph_features.py --feature=phase_lock_value --threshold=0.3
-#./compute_graph_features.py --feature=phase_lock_value --threshold=0.5
-#./compute_graph_features.py --feature=phase_lock_value --threshold=0.7

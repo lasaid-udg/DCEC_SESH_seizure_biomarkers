@@ -11,6 +11,7 @@ import warnings
 from docopt import docopt
 warnings.filterwarnings("ignore")
 sys.path.append("../")
+from lib import settings
 from lib.slices import EegWindowsTusz
 from lib.filters import BandEstimator
 from lib.features import FeatureGateway
@@ -25,6 +26,11 @@ def main():
     feature_estimator = FeatureGateway()
     feature_list = []
     counter = 0
+
+    channels_lookup = {}
+    for hemisphere, channels in settings["siena"]["univariate_channels_groups"].items():
+        for channel in channels:
+            channels_lookup[channel] = hemisphere
 
     for metadata, windows in iter(windows_tusz):
         logging.info(f"Processing patient = {metadata['patient']}")
@@ -41,10 +47,16 @@ def main():
                     logging.info(f"Processing band = {band_name}")
 
                     for channel_number, channel_name in enumerate(metadata["channels"]):
+                        if ((metadata["seizure_type"] not in settings["tusz"]["valid_seizure_types"]) or
+                            (metadata["seizure_type"] != "bilateral" and
+                            channel_name not in settings["tusz"]["univariate_channels_groups"][metadata["seizure_type"]])):
+                                continue
+
+                        hemisphere = channels_lookup[channel_name]
                         feature_value = feature_estimator(FEATURE, band[channel_number, :])
                         feature_list.append({"patient": metadata["patient"],
                                              "band": band_name,
-                                             "seizure_type": metadata["seizure_type"],
+                                             "hemisphere": hemisphere,
                                              "channel": channel_name,
                                              "seizure_stage": seizure_stage[0],
                                              "time_point": seizure_stage[1],
@@ -55,12 +67,18 @@ def main():
             else:
                 for channel_number, channel_name in enumerate(metadata["channels"]):
                     logging.info("Processing instance")
+                    if ((metadata["seizure_type"] not in settings["tusz"]["valid_seizure_types"]) or
+                        (metadata["seizure_type"] != "bilateral" and
+                         channel_name not in settings["tusz"]["univariate_channels_groups"][metadata["seizure_type"]])):
+                            continue
+
+                    hemisphere = channels_lookup[channel_name]
                     densities = feature_estimator(FEATURE, eeg_array[channel_number, :],
                                                   metadata["sampling_frequency"])
                     for band_name, density in zip(["delta", "theta", "alpha", "beta", "gamma", "all"], densities):
                         feature_list.append({"patient": metadata["patient"],
                                              "band": band_name,
-                                             "seizure_type": metadata["seizure_type"],
+                                             "hemisphere": hemisphere,
                                              "channel": channel_name,
                                              "seizure_stage": seizure_stage[0],
                                              "time_point": seizure_stage[1],

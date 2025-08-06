@@ -22,11 +22,17 @@ class EegProcessorBaseClass():
         self.ekg_units = settings[self.DATASET]["ekg_units"]
         self.power_noise_frequency = settings[self.DATASET]["power_noise_frequency"]
         self.selected_channels = settings[self.DATASET]["channels"]
+        self.bipolar_channels = self.clean_bipolar_channels(settings[self.DATASET]["univariate_channels_groups"])
         self.drift_frequency = settings["drift_frequency"]
         self.hfo_frequency = settings["hfo_frequency"]
         self.channels = None
         self.data = filename
         self.filter_bank = None
+    
+    def clean_bipolar_channels(self, bipolar_channels: dict):
+        bipolar_channels = sum(list(bipolar_channels.values()), [])
+        bipolar_channels = [tuple([y.lower() for y in x.split("-")]) for x in bipolar_channels]
+        return bipolar_channels
 
     def resample(self) -> None:
         """
@@ -81,6 +87,17 @@ class EegProcessorBaseClass():
         self.filter_bank.sampling_frequency = self.sampling_frequency
         self._data = self.filter_bank.apply_filter(self._data, "notch",
                                                    power_frequency=self.power_noise_frequency)
+
+    def convert_to_bipolar(self, eeg_array: numpy.array) -> None:
+        """
+        Convert the recording channels from monopolar to bipolar longitudinal
+        :param eeg_array: matrix with the eeg recording [channels x samples]
+        """
+        bipolar_array = numpy.zeros((len(self.bipolar_channels), eeg_array.shape[1]))
+        channel_to_idx = {channel.lower(): idx for idx, channel in enumerate(self.selected_channels)}
+        for idx, (ch1, ch2) in enumerate(self.bipolar_channels):
+            bipolar_array[idx, :] = eeg_array[channel_to_idx[ch1], :] - eeg_array[channel_to_idx[ch2], :]
+        return bipolar_array
 
     @classmethod
     def rereference_to_average(cls, eeg_array: numpy.array) -> numpy.array:
@@ -137,13 +154,13 @@ class EegProcessorChb(EegProcessorBaseClass):
         The list of expected channels is detailed in settings
         """
         regex = "-[0-9]$"
-        channels_to_idx = {re.sub(regex, "", x): y for x, y in zip(self.channels,
+        channels_to_idx = {re.sub(regex, "", x).lower(): y for x, y in zip(self.channels,
                                                                    range(len(self.channels)))}
         temp_eeg = numpy.zeros([len(self.selected_channels),
                                self._data.shape[1]])
         for idx, channel in zip(range(len(self.selected_channels)),
                                 self.selected_channels):
-            new_channel = self._data[channels_to_idx[channel], :]
+            new_channel = self._data[channels_to_idx[channel.lower()], :]
             temp_eeg[idx, :] = new_channel
         self._data = temp_eeg
 

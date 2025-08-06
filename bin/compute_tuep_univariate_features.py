@@ -11,6 +11,7 @@ import warnings
 from docopt import docopt
 warnings.filterwarnings("ignore")
 sys.path.append("../")
+from lib import settings
 from lib.slices import EegWindowsTuep
 from lib.filters import BandEstimator
 from lib.features import FeatureGateway
@@ -26,6 +27,11 @@ def main():
     feature_list = []
     counter = 0
 
+    channels_lookup = {}
+    for hemisphere, channels in settings["siena"]["univariate_channels_groups"].items():
+        for channel in channels:
+            channels_lookup[channel] = hemisphere
+
     for metadata, window in iter(windows_tuep):
         logging.info(f"Processing patient = {metadata['patient']}")
         counter += 1
@@ -40,12 +46,15 @@ def main():
                 logging.info(f"Processing band = {band_name}")
 
                 for channel_number, channel_name in enumerate(metadata["channels"]):
+                    hemisphere = channels_lookup[channel_name]
                     feature_value = feature_estimator(FEATURE, band[channel_number, :])
                     feature_list.append({"patient": metadata["patient"],
                                          "band": band_name,
+                                         "hemisphere": hemisphere,
                                          "channel": channel_name,
                                          "feature": FEATURE,
-                                         "value": feature_value})
+                                         "value": feature_value,
+                                         "id": metadata["file_number"]})
 
         else:
             for channel_number, channel_name in enumerate(metadata["channels"]):
@@ -55,9 +64,11 @@ def main():
                 for band_name, density in zip(["delta", "theta", "alpha", "beta", "gamma", "all"], densities):
                     feature_list.append({"patient": metadata["patient"],
                                          "band": band_name,
+                                         "hemisphere": hemisphere,
                                          "channel": channel_name,
                                          "feature": FEATURE,
-                                         "value": density})
+                                         "value": density,
+                                         "id": metadata["file_number"]})
 
     feature_df = pandas.DataFrame(feature_list)
     output_file_eeg = os.path.join(OUTPUT_DIRECTORY, "features", "tuep", f"{FEATURE}.csv")

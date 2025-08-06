@@ -45,7 +45,7 @@ class StatisticalTests():
         :param samples: ranked samples
         """
         _, p_value = scipy.stats.friedmanchisquare(*samples)
-        details = f"p_value = {p_value}, significance level = {self.significance_level}"
+        details = f"p_value = {p_value}, sample size = {len(samples[0])} , significance level = {self.significance_level}"
 
         if p_value > 0.05:
             logging.info(f"Friedman test, null hyphotesis was not rejected, {details}")
@@ -79,7 +79,7 @@ class StatisticalTests():
         :param samples: groups for comparison
         """
         _, p_value = scipy.stats.kruskal(*samples)
-        details = f"p_value = {p_value}, significance level = {self.significance_level}"
+        details = f"p_value = {round(p_value, 4)}, sample size = {len(samples[0])} significance level = {self.significance_level}"
 
         if p_value > 0.05:
             logging.info(f"Kruskal test, null hyphotesis was not rejected, {details}")
@@ -95,7 +95,7 @@ class StatisticalTests():
         :param samples: distribution sample
         """
         _, p_value = diagnostic.lilliefors(samples)
-        details = f"p_value = {p_value}, significance level = {self.significance_level}"
+        details = f"p_value={round(p_value, 4)}, sample size={len(samples)}, significance level={self.significance_level}"
 
         if p_value > 0.05:
             logging.info(f"Lilliefors test, null hyphotesis was not rejected, {details}")

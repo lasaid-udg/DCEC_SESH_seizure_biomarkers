@@ -11,11 +11,12 @@ eog_denoiser_sources_tol:         # Min and max number of sources to remove
   - 2
 emg_denoiser_segment_lenght: 10
 emg_denoiser_emg_freq: 20         # Frequency aproximately separating the EEG and EMG bands
-emg_denoiser_ratio: 5             # Ratio of average power in EEG band to average power in the EMG band below which a
+emg_denoiser_ratio: 0.5             # Ratio of average power in EEG band to average power in the EMG band below which a
                                   # component will be considered to be EMG-related.
 emg_denoiser_sources_tol:         # # Min and max number of sources to remove     
   - 0
   - 2
+cssd_denoiser_segment_lenght: 20
 
 ####################################
 preictal_min_length: 120
@@ -36,29 +37,18 @@ postictal_windows_start:
   - 30
   - 60
 intra_windows_categories:
-  - [preictal, 60, 1, "61s before", "61s before"]
-  - [preictal, 30, 1, "31s before", "31s before"]
-  - [preictal, 10, 2, "11s before", "11s before"]
-  - [preictal, 0, 3, "1s before", "1s before"]
-  - [ictal, 1, 1, "Onset", "Start of seizure"]
-  - [ictal, 2, 1, "Middle point", "Middle point"]
-  - [ictal, -1, 2, "Termination", "End of seizure"]
-  - [postictal, 0, 1, "1s after", "1s after"]
-  - [postictal, 10, 2, "11s after", "11s after"]
-  - [postictal, 30, 3, "31s after", "31s after"]
-  - [postictal, 60, 1, "61s after", "61s after"]
-intra_windows_abbreviations:
-  61s before: 61s bef
-  31s before: 31s bef
-  11s before: 11s bef
-  1s before: 1s bef
-  Start of seizure: Onset
-  Middle point: Middle
-  End of seizure: End
-  1s after: 1s aft
-  11s after: 11s aft
-  31s after: 31s aft
-  61s after: 61 aft
+  - [preictal, 60, 1, "61s bef"]
+  - [preictal, 30, 1, "31s bef"]
+  - [preictal, 10, 2, "11s bef"]
+  - [preictal, 0, 3, "1s bef"]
+  - [ictal, 1, 1, "Onset"]
+  - [ictal, 2, 1, "Middle"]
+  - [ictal, -1, 2, "End"]
+  - [postictal, 0, 1, "1s aft"]
+  - [postictal, 10, 2, "11s aft"]
+  - [postictal, 30, 3, "31s aft"]
+  - [postictal, 60, 1, "61s aft"]
+
 inter_windows_categories:
   - ["preictal"]
   - ["ictal"]
@@ -74,46 +64,30 @@ band_specifications:
 
 
 ####################################
-
-electrode_positions:
-    Fp1: [-0.247, 0.760]
-    Fp2: [0.247, 0.760]
-    F3: [-0.35, 0.41]
-    F4: [0.35, 0.41]
-    F7: [-0.647, 0.470]
-    F8: [0.647, 0.470]
-    O1: [-0.247, -0.760]
-    O2: [0.247, -0.760]
-    C3: [-0.4, 0]
-    C4: [0.4, 0]
-    T3: [-0.8, 0]
-    T4: [0.8, 0]
-    T5: [-0.647, -0.45]
-    T6: [0.647, -0.45]
-    P3: [-0.35, -0.42]
-    P4: [0.35, -0.42]
-    Fz: [0, 0.4]
-    Cz: [0, 0]
-    Pz: [0, -0.4]
-
 bipolar_electrode_positions:
-    FP1-F7: [-0.48, 0.61]
+    Fp1-F7: [-0.48, 0.61]
     F7-T7: [-0.76, 0.23]
     T7-P7: [-0.76, -0.21]
     P7-O1: [-0.48, -0.60]
-    FP1-F3: [-0.22, 0.70]  
+    Fp1-F3: [-0.22, 0.70]  
     F3-C3: [-0.37, 0.20]
     C3-P3: [-0.37, -0.21]
     P3-O1: [-0.22, -0.70]
-    FP2-F8: [0.48, 0.61]
+    Fp2-F8: [0.48, 0.61]
     F8-T8: [0.76, 0.23]
     T8-P8: [0.76, -0.21]
     P8-O2: [0.44, -0.60]
-    FP2-F4: [0.22, 0.70]  
+    Fp2-F4: [0.22, 0.70]  
     F4-C4: [0.37, 0.23]
     C4-P4: [0.37, -0.21]
     P4-O2: [0.22, -0.70]
-  
+    F7-T3: [-0.76, 0.23]
+    T3-T5: [-0.76, -0.21]
+    T5-O1: [-0.48, -0.60]
+    F8-T4: [0.76, 0.23]
+    T4-T6: [0.76, -0.21]
+    T6-O2: [0.44, -0.60]
+
 ####################################
 chb-mit:
   epoch_size: 2             # Seconds  
@@ -123,45 +97,69 @@ chb-mit:
   ekg_units:
   power_noise_frequency: 60 #Hertz
 
-  seizure_type: null
+  seizure_types:
+    chb01: bilateral
+    chb02: bilateral
+    chb03: bilateral
+    chb04: bilateral
+    chb05: bilateral
+    chb06: bilateral
+    chb07: bilateral
+    chb08: bilateral
+    chb09: bilateral
+    chb10: bilateral
+    chb11: bilateral
+    chb12: bilateral
+    chb13: bilateral
+    chb14: bilateral
+    chb15: bilateral
+    chb16: bilateral
+    chb17: bilateral
+    chb18: bilateral
+    chb19: bilateral
+    chb20: bilateral
+    chb21: bilateral
+    chb22: bilateral
+    chb23: bilateral
+    chb24: bilateral
 
   channels:
-    - FP1-F7
+    - Fp1-F7
     - F7-T7
     - T7-P7
     - P7-O1
-    - FP1-F3
+    - Fp1-F3
     - F3-C3
     - C3-P3
     - P3-O1
-    - FP2-F4
+    - Fp2-F4
     - F4-C4
     - C4-P4
     - P4-O2
-    - FP2-F8
+    - Fp2-F8
     - F8-T8
     - T8-P8
     - P8-O2
   
   univariate_channels_groups:
     left:
-      - FP1-F7
+      - Fp1-F7
       - F7-T7
       - T7-P7
       - P7-O1
-      - FP1-F3
+      - Fp1-F3
       - F3-C3
       - C3-P3
       - P3-O1
     right:
-    - FP2-F4
-    - F4-C4
-    - C4-P4
-    - P4-O2
-    - FP2-F8
-    - F8-T8
-    - T8-P8
-    - P8-O2
+      - Fp2-F4
+      - F4-C4
+      - C4-P4
+      - P4-O2
+      - Fp2-F8
+      - F8-T8
+      - T8-P8
+      - P8-O2
 
 
 siena: 
@@ -172,25 +170,25 @@ siena:
   power_noise_frequency: 50 #Hertz
 
   valid_seizure_types:
-    - IAS
-    # - FBTC  # Small amount of events - 9
-    # - WIAS  # Small amount of events - 3
+    - right
+    - left
+    - bilateral
 
   seizure_types:
-    PN00: IAS
-    PN01: IAS
-    PN03: IAS
-    PN05: IAS
-    PN06: IAS
-    PN07: IAS
-    PN09: IAS
-    PN10: FBTC
-    PN11: IAS
-    PN12: IAS
-    PN13: IAS
-    PN14: WIAS
-    PN16: IAS
-    PN17: IAS
+    PN00: right
+    PN01: left
+    PN03: right
+    PN05: left
+    PN06: left
+    PN07: left
+    PN09: left
+    PN10: bilateral
+    PN11: right
+    PN12: left
+    PN13: left
+    PN14: left
+    PN16: left
+    PN17: right
 
   channels:
     - Fp1
@@ -214,29 +212,25 @@ siena:
     - Pz
 
   univariate_channels_groups:
-    frontal:
-      - Fp1
-      - Fp2
-      - F3
-      - F4
-      - F7
-      - F8
-      - Fz
-    temporal:
-      - T3
-      - T4
-      - T5
-      - T6
-    parietal:
-      - P3
-      - P4
-      - Pz
-      - C3
-      - C4
-      - Cz
-    occipital:
-      - O1
-      - O2
+    left:
+      - Fp1-F7
+      - F7-T3
+      - T3-T5
+      - T5-O1
+      - Fp1-F3
+      - F3-C3
+      - C3-P3
+      - P3-O1
+    right:
+      - Fp2-F4
+      - F4-C4
+      - C4-P4
+      - P4-O2
+      - Fp2-F8
+      - F8-T4
+      - T4-T6
+      - T6-O2
+
 
 tusz:
   f_samp: 512
@@ -246,10 +240,13 @@ tusz:
   power_noise_frequency: 60 #Hertz
 
   valid_seizure_types:
+    - left
+    - right
+    - bilateral
     #- absz   # Small amount of events - 6
     #- cpsz
-    - fnsz
-    - gnsz
+    #- fnsz
+    #- gnsz
     #- spsz   # Small amount of events - 1
     #- tcsz   # Small amount of events - 2
     #- tnsz
@@ -276,29 +273,24 @@ tusz:
     - Pz
   
   univariate_channels_groups:
-    frontal:
-      - Fp1
-      - Fp2
-      - F3
-      - F4
-      - F7
-      - F8
-      - Fz
-    temporal:
-      - T3
-      - T4
-      - T5
-      - T6
-    parietal:
-      - P3
-      - P4
-      - Pz
-      - C3
-      - C4
-      - Cz
-    occipital:
-      - O1
-      - O2
+    left:
+      - Fp1-F7
+      - F7-T3
+      - T3-T5
+      - T5-O1
+      - Fp1-F3
+      - F3-C3
+      - C3-P3
+      - P3-O1
+    right:
+      - Fp2-F4
+      - F4-C4
+      - C4-P4
+      - P4-O2
+      - Fp2-F8
+      - F8-T4
+      - T4-T6
+      - T6-O2
 
 tuep:
   f_samp: 512
@@ -329,29 +321,25 @@ tuep:
     - Pz
   
   univariate_channels_groups:
-    frontal:
-      - Fp1
-      - Fp2
-      - F3
-      - F4
-      - F7
-      - F8
-      - Fz
-    temporal:
-      - T3
-      - T4
-      - T5
-      - T6
-    parietal:
-      - P3
-      - P4
-      - Pz
-      - C3
-      - C4
-      - Cz
-    occipital:
-      - O1
-      - O2
+    left:
+      - Fp1-F7
+      - F7-T3
+      - T3-T5
+      - T5-O1
+      - Fp1-F3
+      - F3-C3
+      - C3-P3
+      - P3-O1
+    right:
+      - Fp2-F4
+      - F4-C4
+      - C4-P4
+      - P4-O2
+      - Fp2-F8
+      - F8-T4
+      - T4-T6
+      - T6-O2
+
 
 ####################################
 
@@ -363,4 +351,3 @@ univariate_features:
   - katz_fractal_dimension
   - approximate_entropy
   - power_spectral_density
-  - phase_lock_value

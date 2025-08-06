@@ -12,6 +12,7 @@ class EegSlices():
     def __init__(self):
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
         base_path = os.path.join(base_path, "slices", self.DATASET)
+        self.channels = self.clean_bipolar_channels(settings[self.DATASET]["univariate_channels_groups"])
         self._metadata = {}
         self.base_path = base_path
         self.metadata = base_path
@@ -33,6 +34,10 @@ class EegSlices():
                 self._metadata[single_metadata["patient"]] = []
             self._metadata[single_metadata["patient"]].append(single_metadata)
 
+    def clean_bipolar_channels(self, bipolar_channels: dict):
+        bipolar_channels = sum(list(bipolar_channels.values()), [])
+        return bipolar_channels
+
     def get(self, patient: str, seizure_number: int) -> Tuple[dict, numpy.array]:
         """
         Return metadata and eeg slice for a single patient
@@ -40,7 +45,7 @@ class EegSlices():
         :param seizure_number: seizure id
         """
         metadata = self._metadata[patient][seizure_number]
-        metadata["channels"] = settings[self.DATASET]["channels"]
+        metadata["channels"] = self.channels
         eeg_slice = numpy.load(metadata["slice_file"])
         return metadata, eeg_slice
 

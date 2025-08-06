@@ -9,7 +9,6 @@ warnings.filterwarnings("ignore")
 sys.path.append("../")
 from lib.slices import WindowSelector, EegSlicesChb
 from lib.signals import EegProcessorBaseClass
-from lib.bss import EogDenoiser, EmgDenoiser
 
 
 OUTPUT_DIRECTORY = os.getenv("BIOMARKERS_PROJECT_HOME")
@@ -25,14 +24,6 @@ def main():
             logging.info("Processing eeg slice")
             seizure_metadata, eeg_slice = slices_chb.get(patient, seizure_number)
 
-            ###########################################################
-            eog_denoiser = EogDenoiser(seizure_metadata["sampling_frequency"])
-            _, eeg_slice = eog_denoiser.apply_by_segments(eeg_slice)
-
-            emg_denoiser = EmgDenoiser(seizure_metadata["sampling_frequency"])
-            _, eeg_slice = emg_denoiser.apply_by_segments(eeg_slice)
-
-            ###########################################################
             eeg_slice = EegProcessorBaseClass.standardize(eeg_slice)
 
             selector = WindowSelector(seizure_metadata["sampling_frequency"])

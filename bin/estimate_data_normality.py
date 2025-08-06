@@ -31,18 +31,15 @@ def main():
     analyzer = IntraUnivariateTuepAnalyzer(FEATURE)
     test_results = []
 
-    for region in ["frontal", "temporal", "parietal", "occipital"]:
-        groups = analyzer.processed_data_for_lilliefors(region)
-        for group in groups:
-            p_value, interpretation = stats_gateway.run_lilliefors_test(group[1])
-            test_results.append({"feature": FEATURE,
-                                 "region": region,
-                                 "band": group[0],
-                                 "group_size": group[1].shape[0],
-                                 "seizure_type": "NA",
-                                 "time_point": "NA",
-                                 "p_value": p_value,
-                                 "interpretation": interpretation})
+    groups = analyzer.processed_data_for_lilliefors()
+    for group in groups:
+        p_value, interpretation = stats_gateway.run_lilliefors_test(group[3])
+        test_results.append({"feature": FEATURE,
+                             "band": group[0],
+                             "group_size": group[3].shape[0],
+                             "p_value": p_value,
+                             "interpretation": interpretation})
+    
     output_file = f"normality_TUEP_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
 
@@ -55,17 +52,16 @@ def main():
     analyzer = IntraUnivariateChbAnalyzer(FEATURE)
     test_results = []
 
-    for region in ["left", "right"]:
-        groups = analyzer.processed_data_for_lilliefors(region, "unknown")
-        for group in groups:
-            p_value, interpretation = stats_gateway.run_lilliefors_test(group[2])
-            test_results.append({"feature": FEATURE,
-                                 "region": region,
-                                 "band": group[0],
-                                 "group_size": group[2].shape[0],
-                                 "time_point": group[1],
-                                 "p_value": p_value,
-                                 "interpretation": interpretation})
+    groups = analyzer.processed_data_for_lilliefors()
+    for group in groups:
+        p_value, interpretation = stats_gateway.run_lilliefors_test(group[3])
+        test_results.append({"feature": FEATURE,
+                             "band": group[0],
+                             "group_size": group[3].shape[0],
+                             "seizure_stage": group[1],
+                             "time_point": group[2],
+                             "p_value": p_value,
+                             "interpretation": interpretation})
 
     output_file = f"normality_CHB_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
@@ -79,19 +75,16 @@ def main():
     analyzer = IntraUnivariateSienaAnalyzer(FEATURE)
     test_results = []
 
-    for region in ["frontal", "temporal", "parietal", "occipital"]:
-        for seizure_type in settings["siena"]["valid_seizure_types"]:
-            groups = analyzer.processed_data_for_lilliefors(region, seizure_type)
-            for group in groups:
-                p_value, interpretation = stats_gateway.run_lilliefors_test(group[2])
-                test_results.append({"feature": FEATURE,
-                                     "region": region,
-                                     "band": group[0],
-                                     "group_size": group[2].shape[0],
-                                     "seizure_type": seizure_type,
-                                     "time_point": group[1],
-                                     "p_value": p_value,
-                                     "interpretation": interpretation})
+    groups = analyzer.processed_data_for_lilliefors()
+    for group in groups:
+        p_value, interpretation = stats_gateway.run_lilliefors_test(group[3])
+        test_results.append({"feature": FEATURE,
+                             "band": group[0],
+                             "group_size": group[3].shape[0],
+                             "seizure_stage": group[1],
+                             "time_point": group[2],
+                             "p_value": p_value,
+                             "interpretation": interpretation})
 
     output_file = f"normality_Siena_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
@@ -105,19 +98,16 @@ def main():
     analyzer = IntraUnivariateTuszAnalyzer(FEATURE)
     test_results = []
 
-    for region in ["frontal", "temporal", "parietal", "occipital"]:
-        for seizure_type in settings["tusz"]["valid_seizure_types"]:
-            groups = analyzer.processed_data_for_lilliefors(region, "unknown")
-            for group in groups:
-                p_value, interpretation = stats_gateway.run_lilliefors_test(group[2])
-                test_results.append({"feature": FEATURE,
-                                     "region": region,
-                                     "band": group[0],
-                                     "group_size": group[2].shape[0],
-                                     "seizure_type": seizure_type,
-                                     "time_point": group[1],
-                                     "p_value": p_value,
-                                     "interpretation": interpretation})
+    groups = analyzer.processed_data_for_lilliefors()
+    for group in groups:
+        p_value, interpretation = stats_gateway.run_lilliefors_test(group[3])
+        test_results.append({"feature": FEATURE,
+                             "band": group[0],
+                             "group_size": group[3].shape[0],
+                             "seizure_stage": group[1],
+                             "time_point": group[2],
+                             "p_value": p_value,
+                             "interpretation": interpretation})
 
     output_file = f"normality_TUSZ_{FEATURE}.csv"
     output_file = os.path.join(OUTPUT_DIRECTORY, "reports", output_file)
