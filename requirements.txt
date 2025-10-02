@@ -13,4 +13,5 @@ pycirclize
 scikit-learn
 scikit-posthocs
 scipy
+starbars
 statsmodels

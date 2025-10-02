@@ -214,6 +214,10 @@ class EegProcessorSiena(EegProcessorBaseClass):
 class EegProcessorTusz(EegProcessorBaseClass):
 
     DATASET = "tusz"
+    female = 0
+    male = 0
+    unknown = 0
+    sampling_frequencies = set()
 
     def __init__(self, filename: str):
         """
@@ -230,10 +234,19 @@ class EegProcessorTusz(EegProcessorBaseClass):
         """
         Read eeg recording and channels from edf file
         :param filename: full path of the edf file
+        Note: subject sex 0=unknown, 1=male, 2=female
         """
         data = mne.io.read_raw_edf(filename)
+        if data.info["subject_info"]["sex"] == 1:
+            EegProcessorTusz.male += 1
+        elif data.info["subject_info"]["sex"] == 2:
+            EegProcessorTusz.female += 1
+        else:
+            EegProcessorTusz.unknown += 1
+
         self._data = data.get_data()
         self.sampling_frequency = data.info["sfreq"]
+        EegProcessorTusz.sampling_frequencies.add(self.sampling_frequency)
         self.channels = data.ch_names
         logging.info(f"Recording contains channels = {self.channels}")
 

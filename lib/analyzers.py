@@ -286,8 +286,13 @@ class InterUnivariateFeatureAnalyzer():
         healthy_base_path = os.path.join(base_path, "features", "TUEP", f"{feature_name}.csv")
         self.healthy_raw_features = pandas.read_csv(healthy_base_path)
 
+        dataset = self.DATASET.split("-")[0]
+        stat_tests = os.path.join(base_path, "reports", feature_name, f"kruskal_{dataset}_inter_{feature_name}.csv")
+        self.stat_tests = pandas.read_csv(stat_tests)
+
         self.feature_name = feature_name
         self.univariate_channels_groups = settings[self.DATASET]["univariate_channels_groups"]
+        self.outliers_bound = 5
 
     def univariate_zone_bar_chart(self) -> None:
         """
@@ -337,6 +342,7 @@ class InterUnivariateFeatureAnalyzer():
         """
         groups = self.processed_data_for_kruskal_wallis()
         bands = []
+        annotations = []
 
         for band, features in groups.items():
             features_array = []
@@ -348,15 +354,36 @@ class InterUnivariateFeatureAnalyzer():
                 features_array.append(["Healthy", band, self.feature_name, features[2][idx]])
         
             band_df = pandas.DataFrame(features_array, columns=["Group", "band", "feature", "value"])
+
+            Q1 = band_df["value"].quantile(0.25)
+            Q3 = band_df["value"].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - self.outliers_bound * IQR
+            upper_bound = Q3 + self.outliers_bound * IQR
+            band_df["value"] = band_df[(band_df["value"] >= lower_bound) & (band_df["value"] <= upper_bound)]["value"]
+            bands_annotations = []
+
+            band_p_values = self.stat_tests[self.stat_tests["band"] == band].to_dict(orient="records")
+            try:
+                for pair, p_value in band_p_values[0].items():
+                    if "ictal" in pair and p_value < 0.05:
+                        annotation = [x.capitalize() for x in pair.split("-")] + [0.05]
+                        bands_annotations.append(annotation)
+            except IndexError as exc:
+                if not (self.feature_name == "power_spectral_density" and band == "all"):
+                    raise exc
+
+            annotations.append(bands_annotations)
             bands.append(band_df)
 
         base_path = os.getenv("BIOMARKERS_PROJECT_HOME")
         output_file = os.path.join(base_path, "images", self.DATASET,
                                    f"dist_inter_{self.feature_name}.png")
+        print(output_file)
         if self.feature_name != "power_spectral_density":
-            plot_univariate_inter_dist_chart(*bands, self.feature_name, output_file)
+            plot_univariate_inter_dist_chart(*bands, self.feature_name, annotations, output_file)
         else:
-            plot_univariate_inter_dist_chart_psd(*bands, self.feature_name, output_file)
+            plot_univariate_inter_dist_chart_psd(*bands, self.feature_name, annotations, output_file)
 
     def processed_data_for_kruskal_wallis(self) -> list:
         """

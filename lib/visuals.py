@@ -3,6 +3,7 @@ import seaborn
 import networkx
 import numpy as np
 import matplotlib
+import starbars
 from pycirclize import Circos
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
@@ -72,6 +73,57 @@ def plot_eeg_windows(eeg_array: np.array, metadata: dict, channels_list: list,
            yticklabels=reversed(channels_list))
     ax.set_xlabel("Time [s]", fontsize=8)
     ax.set_ylabel("Channels", fontsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+def plot_eeg_windows_and_sources(eeg_array: np.array, eeg_sources: np.array, channels_list: list,
+                     sampling_frequency: int, period: list, output_file: str = None):
+    """
+    Plot the eeg recording and the eeg sources
+    :param eeg_array: matrix of eeg recordings [channels x samples]
+    :param eeg_sources: matrix of eeg recordings [sources x samples]
+    :param channel_list: list of channels
+    :param sampling_frequency: eeg sampling frequency [Hz]
+    :param period: selected eeg period [start_time, end_time]
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(1, 2, wspace=0.25, hspace=0.25)
+    fig = plt.figure(figsize=(6, 4))
+
+    time = np.linspace(period[0], period[1], int((period[1] - period[0]) * sampling_frequency))
+    eeg_array = eeg_array[:, int(time[0] * sampling_frequency): int(time[-1] * sampling_frequency)]
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 0])
+    space = np.max(np.max(eeg_array)) / 1.5
+    for count, channel in enumerate(channels_list):
+        ax.plot(time, eeg_array[count, :] - space * (count + 1), label=channel,
+                linewidth=1)
+
+    ax.set(yticks=np.arange(-space * len(channels_list), 0, space),
+           yticklabels=reversed(channels_list))
+    ax.set_xlabel("Time [s] \n\n a) EEG recording", fontsize=8)
+    ax.set_ylabel("Channels", fontsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    #########################################################
+    source_names = [f"S{idx}" for idx in range(1, eeg_sources.shape[0] + 1)]
+    ax = fig.add_subplot(grid_specs[0, 1])
+    space = np.max(np.max(eeg_sources)) / 1.5
+    for count, channel in enumerate(source_names):
+        ax.plot(time, eeg_sources[count, :] - space * (count + 1), label=channel,
+                linewidth=1)
+
+    ax.set(yticks=np.arange(-space * len(source_names), 0, space),
+           yticklabels=reversed(source_names))
+    ax.set_xlabel("Time [s] \n\n b) EEG sources", fontsize=8)
+    ax.set_ylabel("Sources", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -455,7 +507,7 @@ def plot_univariate_intra_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
 def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                      alpha: pandas.DataFrame, beta: pandas.DataFrame,
                                      gamma: pandas.DataFrame, all: pandas.DataFrame,
-                                     feature: str, output_file: str = None):
+                                     feature: str, annotations: list, output_file: str = None):
     """
     Plot the eeg univariate features per band
     :param delta:
@@ -465,18 +517,21 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     :param gamma:
     :param all:
     :param feature: name of the feature
+    :param annotations: list containing the x-axis labels and the p-value of the pair
     :param output_file: if specified the figure will be saved
     """
-    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.30)
-    fig = plt.figure(figsize=(5, 5.5))
+    grid_specs = GridSpec(2, 3, wspace=0.25, hspace=0.15)
+    fig = plt.figure(figsize=(5.5, 5))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
     hfont = {'fontname':'Times New Roman'}
     feature = "skewness" if feature == "skew" else feature
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.violinplot(delta, x="value", y="Group", ax=ax, palette="pastel",
+    seaborn.violinplot(delta, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    starbars.draw_annotation(annotations[0], ax=ax)
+    ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel(f"{feature}".capitalize().replace("_", " "), fontsize=8)
     ax.set_xlabel("(a) delta", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
@@ -484,49 +539,53 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.violinplot(theta, x="value", y="Group", ax=ax, palette="pastel",
+    seaborn.violinplot(theta, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.axes.get_yaxis().set_ticks([])
+    starbars.draw_annotation(annotations[1], ax=ax)
+    ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
     ax.set_xlabel("(b) theta", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.violinplot(alpha, x="value", y="Group", ax=ax, palette="pastel",
+    ax = fig.add_subplot(grid_specs[0, 2])
+    seaborn.violinplot(alpha, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.set_ylabel(f"{feature}".capitalize().replace("_", " "), fontsize=8)
+    starbars.draw_annotation(annotations[2], ax=ax)
+    ax.axes.get_xaxis().set_ticks([])
+    ax.set_ylabel("")
     ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.violinplot(beta, x="value", y="Group", ax=ax, palette="pastel",
+    ax = fig.add_subplot(grid_specs[1, 0])
+    seaborn.violinplot(beta, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.axes.get_yaxis().set_ticks([])
-    ax.set_xlabel("(d) beta", fontsize=8, **hfont)
-    ax.set_ylabel("")
-    ax.xaxis.set_tick_params(labelsize=6)
-    ax.yaxis.set_tick_params(labelsize=6)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[2, 0])
-    seaborn.violinplot(gamma, x="value", y="Group", ax=ax, palette="pastel",
-                       inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    starbars.draw_annotation(annotations[3], ax=ax)
     ax.set_ylabel(f"{feature}".capitalize().replace("_", " "), fontsize=8)
-    ax.set_xlabel("Feature value \n\n (e) gamma", fontsize=8, **hfont)
+    ax.set_xlabel("(d) beta", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[2, 1])
-    seaborn.violinplot(all, x="value", y="Group", ax=ax, palette="pastel",
+    ax = fig.add_subplot(grid_specs[1, 1])
+    seaborn.violinplot(gamma, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.axes.get_yaxis().set_ticks([])
-    ax.set_xlabel("Feature value \n\n (f) full bandwidth", fontsize=8, **hfont)
+    starbars.draw_annotation(annotations[4], ax=ax)
     ax.set_ylabel("")
+    ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
+    ax.xaxis.set_tick_params(labelsize=6)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[1, 2])
+    seaborn.violinplot(all, x="Group", y="value", ax=ax, palette="pastel",
+                       inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    starbars.draw_annotation(annotations[5], ax=ax)
+    ax.set_ylabel("")
+    ax.set_xlabel("(f) full bandwidth", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
     
@@ -680,7 +739,7 @@ def plot_univariate_inter_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     :param output_file: if specified the figure will be saved
     """
     grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
-    fig = plt.figure(figsize=(7, 6))
+    fig = plt.figure(figsize=(5, 6))
     features_map = {"hjorth_mobility": "mobility",
                     "hjorth_complexity": "complexity",
                     "katz_fractal_dimension": "katz fd",
@@ -738,7 +797,7 @@ def plot_univariate_inter_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
 def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.DataFrame,
                                          alpha: pandas.DataFrame, beta: pandas.DataFrame,
                                          gamma: pandas.DataFrame, _: pandas.DataFrame,
-                                         feature: str, output_file: str = None):
+                                         feature: str, annotations: list, output_file: str = None):
     """
     Plot the eeg univariate features healthy subject vs patients (per band)
     :param delta:
@@ -747,10 +806,11 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     :param beta:
     :param gamma:
     :param feature: name of the feature
+    :param annotations: list containing the x-axis labels and the p-value of the pair
     :param output_file: if specified the figure will be saved
     """
-    grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.30)
-    fig = plt.figure(figsize=(5, 5.5))
+    grid_specs = GridSpec(2, 3, wspace=0.25, hspace=0.15)
+    fig = plt.figure(figsize=(5.5, 5))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
     hfont = {"fontname": "Times New Roman"}
     features_map = {"hjorth_mobility": "mobility",
@@ -762,48 +822,54 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
-    seaborn.violinplot(delta, x="value", y="Group", ax=ax, palette="pastel",
+    seaborn.violinplot(delta, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    starbars.draw_annotation(annotations[0], ax=ax)
     ax.set_ylabel(feature, fontsize=8)
-    ax.set_xlabel("a) delta", fontsize=8, **hfont)
+    ax.set_xlabel("(a) delta", fontsize=8, **hfont)
+    ax.axes.get_xaxis().set_ticks([])
+    ax.xaxis.set_tick_params(labelsize=6)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    #########################################################
+    ax = fig.add_subplot(grid_specs[0, 1])
+    seaborn.violinplot(theta, x="Group", y="value", ax=ax, palette="pastel",
+                       inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    starbars.draw_annotation(annotations[1], ax=ax)
+    ax.set_ylabel("")
+    ax.set_xlabel("b) theta", fontsize=8, **hfont)
+    ax.axes.get_xaxis().set_ticks([])
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[0, 1])
-    seaborn.violinplot(theta, x="value", y="Group", ax=ax, palette="pastel",
+    ax = fig.add_subplot(grid_specs[0, 2])
+    seaborn.violinplot(alpha, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    starbars.draw_annotation(annotations[2], ax=ax)
     ax.set_ylabel("")
-    ax.set_xlabel("b) theta", fontsize=8, **hfont)
-    ax.axes.get_yaxis().set_ticks([])
+    ax.set_xlabel("c) alpha", fontsize=8, **hfont)
+    ax.axes.get_xaxis().set_ticks([])
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
-    seaborn.violinplot(alpha, x="value", y="Group", ax=ax, palette="pastel",
+    seaborn.violinplot(beta, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
+    starbars.draw_annotation(annotations[3], ax=ax)
     ax.set_ylabel(feature, fontsize=8)
-    ax.set_xlabel("c) alpha", fontsize=8, **hfont)
-    ax.yaxis.set_tick_params(labelsize=6)
-    ax.xaxis.set_tick_params(labelsize=6)
-
-    #########################################################
-    ax = fig.add_subplot(grid_specs[1, 1])
-    seaborn.violinplot(beta, x="value", y="Group", ax=ax, palette="pastel",
-                       inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.set_ylabel("")
     ax.set_xlabel("d) beta", fontsize=8, **hfont)
-    ax.axes.get_yaxis().set_ticks([])
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
     #########################################################
-    ax = fig.add_subplot(grid_specs[2, :])
-    seaborn.violinplot(gamma, x="value", y="Group", ax=ax, palette="pastel",
+    ax = fig.add_subplot(grid_specs[1, 1:])
+    seaborn.violinplot(gamma, x="Group", y="value", ax=ax, palette="pastel",
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
-    ax.set_ylabel(feature, fontsize=8)
-    ax.set_xlabel("Feature value \n\n e) gamma", fontsize=8, **hfont)
+    starbars.draw_annotation(annotations[4], ax=ax)
+    ax.set_ylabel("")
+    ax.set_xlabel("e) gamma", fontsize=8, **hfont)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 

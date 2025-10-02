@@ -552,7 +552,6 @@ class CssdDenoiser():
                 segment_common[channel, :] = common_odd[count_odd]
                 count_odd += 1
 
-        return segment, segment_common
         cssd = CommonSubspaceDecomposition()
         common_noise, common_noise, specific_eeg, specific_noise = cssd.fit_transform(segment,
                                                                                       segment_common)
