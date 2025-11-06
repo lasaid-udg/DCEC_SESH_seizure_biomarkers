@@ -46,6 +46,8 @@ class EegSlices():
         """
         metadata = self._metadata[patient][seizure_number]
         metadata["channels"] = self.channels
+        if "Initiative1_epic1" in metadata["slice_file"]:
+            metadata["slice_file"] = metadata["slice_file"].replace("Initiative1_epic1", "Initiative1_univariate")
         eeg_slice = numpy.load(metadata["slice_file"])
         return metadata, eeg_slice
 

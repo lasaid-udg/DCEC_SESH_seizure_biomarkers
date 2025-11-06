@@ -81,6 +81,75 @@ def plot_eeg_windows(eeg_array: np.array, metadata: dict, channels_list: list,
                     transparent=False, facecolor='white')
     plt.show()
 
+
+def plot_eeg_windows_2(eeg_array_1: np.array, eeg_array_2: np.array, metadata_1: dict, metadata_2: dict,
+                       channels_list_1: list, channels_list_2: list, sampling_frequency: int, period: list,
+                       output_file: str = None):
+    """
+    Plot 2 eeg recordings
+    :param eeg_array_1: matrix of eeg recordings [channels x samples]
+    :param eeg_array_2: matrix of eeg recordings [channels x samples]
+    :param metadata_1: details about seizure ranges
+    :param metadata_2: details about seizure ranges
+    :param channel_list_1: list of channels
+    :param channel_list_2: list of channels
+    :param sampling_frequency: eeg sampling frequency [Hz]
+    :param period: selected eeg period [start_time, end_time]
+    :param output_file: if specified the figure will be saved
+    """
+    grid_specs = GridSpec(1, 2, wspace=0.25, hspace=0.25)
+    fig = plt.figure(figsize=(6, 4))
+    time = np.linspace(period[0], period[1], int((period[1] - period[0]) * sampling_frequency))
+
+    #########################################################
+    eeg_array_1 = eeg_array_1[:, int(time[0] * sampling_frequency): int(time[-1] * sampling_frequency)]
+    
+    ax = fig.add_subplot(grid_specs[0, 0])
+    space = np.max(np.max(eeg_array_1)) / 1.5
+
+    for count, channel in enumerate(channels_list_1):
+        ax.plot(time, eeg_array_1[count, :] - space * (count + 1), label=channel,
+                linewidth=1)
+
+    seizure_lines = generate_seizure_line(period[0], period[1],
+                                          metadata_1["seizures"])
+    for line in seizure_lines:
+        ax.plot(line[:2], (space, -space * (count + 2)), linewidth=1, color=line[2])
+
+    ax.set(yticks=np.arange(-space * len(channels_list_1), 0, space),
+           yticklabels=reversed(channels_list_1))
+    ax.set_xlabel("Time [s] \n\n (a) CHB-MIT Database", fontsize=8)
+    ax.set_ylabel("Channels", fontsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    #########################################################
+    eeg_array_2 = eeg_array_2[:, int(time[0] * sampling_frequency): int(time[-1] * sampling_frequency)]
+    
+    ax = fig.add_subplot(grid_specs[0, 1])
+    space = np.max(np.max(eeg_array_2)) / 1.5
+
+    for count, channel in enumerate(channels_list_2):
+        ax.plot(time, eeg_array_2[count, :] - space * (count + 1), label=channel,
+                linewidth=1)
+
+    seizure_lines = generate_seizure_line(period[0], period[1],
+                                          metadata_2["seizures"])
+    for line in seizure_lines:
+        ax.plot(line[:2], (space, -space * (count + 2)), linewidth=1, color=line[2])
+
+    ax.set(yticks=np.arange(-space * len(channels_list_2), 0, space),
+           yticklabels=reversed(channels_list_2))
+    ax.set_xlabel("Time [s] \n\n (b) Siena Database", fontsize=8)
+    ax.xaxis.set_tick_params(labelsize=8)
+    ax.yaxis.set_tick_params(labelsize=6)
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches="tight", pad_inches=0.2,
+                    transparent=False, facecolor='white')
+    plt.show()
+
+
 def plot_eeg_windows_and_sources(eeg_array: np.array, eeg_sources: np.array, channels_list: list,
                      sampling_frequency: int, period: list, output_file: str = None):
     """
@@ -107,7 +176,7 @@ def plot_eeg_windows_and_sources(eeg_array: np.array, eeg_sources: np.array, cha
 
     ax.set(yticks=np.arange(-space * len(channels_list), 0, space),
            yticklabels=reversed(channels_list))
-    ax.set_xlabel("Time [s] \n\n a) EEG recording", fontsize=8)
+    ax.set_xlabel("Time [s] \n\n (a) EEG recording", fontsize=8)
     ax.set_ylabel("Channels", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
@@ -122,7 +191,7 @@ def plot_eeg_windows_and_sources(eeg_array: np.array, eeg_sources: np.array, cha
 
     ax.set(yticks=np.arange(-space * len(source_names), 0, space),
            yticklabels=reversed(source_names))
-    ax.set_xlabel("Time [s] \n\n b) EEG sources", fontsize=8)
+    ax.set_xlabel("Time [s] \n\n (b) EEG sources", fontsize=8)
     ax.set_ylabel("Sources", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
@@ -216,7 +285,6 @@ def plot_stationarity_bar_chart(stationarity_results: list, windows_lenghths: li
     grid_specs = GridSpec(2, 2, wspace=0.17, hspace=0.2)
     fig = plt.figure(figsize=(5, 3.5))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
-    hfont = {"fontname": "Times New Roman"}
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
@@ -224,7 +292,7 @@ def plot_stationarity_bar_chart(stationarity_results: list, windows_lenghths: li
     ax.yaxis.set_tick_params(labelsize=6)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("Count", fontsize=8)
-    ax.set_xlabel("(a) 0.5s", fontsize=8, **hfont)
+    ax.set_xlabel("(a) 0.5s", fontsize=8)
     ax.set_ylim([0, max_value])
 
     #########################################################
@@ -233,7 +301,7 @@ def plot_stationarity_bar_chart(stationarity_results: list, windows_lenghths: li
     ax.yaxis.set_tick_params(labelsize=6)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
-    ax.set_xlabel("(b) 1s", fontsize=8, **hfont)
+    ax.set_xlabel("(b) 1s", fontsize=8)
     ax.set_ylim([0, max_value])
 
     #########################################################
@@ -243,7 +311,7 @@ def plot_stationarity_bar_chart(stationarity_results: list, windows_lenghths: li
     ax.xaxis.set_tick_params(labelsize=6)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
     ax.set_ylabel("Count", fontsize=8)
-    ax.set_xlabel("(c) 3s", fontsize=8, **hfont)
+    ax.set_xlabel("(c) 3s", fontsize=8)
     ax.set_ylim([0, max_value])
 
     #########################################################
@@ -254,7 +322,7 @@ def plot_stationarity_bar_chart(stationarity_results: list, windows_lenghths: li
     ax.xaxis.set_tick_params(labelsize=6)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
     ax.set_ylabel("")
-    ax.set_xlabel("(d) 5s", fontsize=8, **hfont)
+    ax.set_xlabel("(d) 5s", fontsize=8)
     ax.set_ylim([0, max_value])
 
     if output_file:
@@ -279,7 +347,6 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
     fig = plt.figure(figsize=(5, 4))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
-    hfont = {"fontname": "Times New Roman"}
     features_map = {"hjorth_mobility": "mobility",
                     "hjorth_complexity": "complexity",
                     "katz_fractal_dimension": "katz fd",
@@ -293,7 +360,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
-    ax.set_xlabel("(a) delta", fontsize=8, **hfont)
+    ax.set_xlabel("(a) delta", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
 
     #########################################################
@@ -301,14 +368,14 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     seaborn.barplot(theta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
-    ax.set_xlabel("(b) theta", fontsize=8, **hfont)
+    ax.set_xlabel("(b) theta", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
-    ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
+    ax.set_xlabel("(c) alpha", fontsize=8)
     ax.axes.get_xaxis().set_ticks([])
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
@@ -316,7 +383,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
     seaborn.barplot(beta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
-    ax.set_xlabel("(d) beta", fontsize=8, **hfont)
+    ax.set_xlabel("(d) beta", fontsize=8)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=6)
@@ -326,7 +393,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     ax = fig.add_subplot(grid_specs[2, 0])
     seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
-    ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
+    ax.set_xlabel("(e) gamma", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
@@ -334,7 +401,7 @@ def plot_univariate_intra_bar_chart(delta: pandas.DataFrame, theta: pandas.DataF
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 1])
     seaborn.barplot(all, x="time_point", y="value", ax=ax, palette="pastel", order=order)
-    ax.set_xlabel("(f) full bandwidth", fontsize=8, **hfont)
+    ax.set_xlabel("(f) full bandwidth", fontsize=8)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
@@ -523,7 +590,6 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     grid_specs = GridSpec(2, 3, wspace=0.25, hspace=0.15)
     fig = plt.figure(figsize=(5.5, 5))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
-    hfont = {'fontname':'Times New Roman'}
     feature = "skewness" if feature == "skew" else feature
 
     #########################################################
@@ -533,7 +599,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     starbars.draw_annotation(annotations[0], ax=ax)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel(f"{feature}".capitalize().replace("_", " "), fontsize=8)
-    ax.set_xlabel("(a) delta", fontsize=8, **hfont)
+    ax.set_xlabel("(a) delta", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -544,7 +610,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     starbars.draw_annotation(annotations[1], ax=ax)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
-    ax.set_xlabel("(b) theta", fontsize=8, **hfont)
+    ax.set_xlabel("(b) theta", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -555,7 +621,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
     starbars.draw_annotation(annotations[2], ax=ax)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
-    ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
+    ax.set_xlabel("(c) alpha", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
 
@@ -565,7 +631,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     starbars.draw_annotation(annotations[3], ax=ax)
     ax.set_ylabel(f"{feature}".capitalize().replace("_", " "), fontsize=8)
-    ax.set_xlabel("(d) beta", fontsize=8, **hfont)
+    ax.set_xlabel("(d) beta", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -575,7 +641,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     starbars.draw_annotation(annotations[4], ax=ax)
     ax.set_ylabel("")
-    ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
+    ax.set_xlabel("(e) gamma", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -585,7 +651,7 @@ def plot_univariate_inter_dist_chart(delta: pandas.DataFrame, theta: pandas.Data
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     starbars.draw_annotation(annotations[5], ax=ax)
     ax.set_ylabel("")
-    ax.set_xlabel("(f) full bandwidth", fontsize=8, **hfont)
+    ax.set_xlabel("(f) full bandwidth", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
     
@@ -607,12 +673,11 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
     :param stage [1-8]: each stage stands for an eeg window
     :param output_file: if specified the figure will be saved
     """
-    hfont = {"fontname": "Times New Roman"}
 
     electrode_positions = {x: y for x, y in settings["bipolar_electrode_positions"].items() if x in channels}
     direction = "vertical"
 
-    grid_specs = GridSpec(3, 4, wspace=0.20, hspace=0.10)
+    grid_specs = GridSpec(3, 4, wspace=0.20, hspace=0.12)
     fig = plt.figure(figsize=(8, 6))
     xi, yi = np.mgrid[-1:1:100j, -1:1:100j]
 
@@ -654,57 +719,57 @@ def plot_topoplot_features_time(stage_1: np.array, stage_2: np.array,
 
     ax = fig.add_subplot(grid_specs[0, 0])
     single_topomap(ax, stage_1[1], min_color, max_color)
-    ax.set_xlabel(f"a) {stage_1[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"a) {stage_1[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 1])
     single_topomap(ax, stage_2[1], min_color, max_color)
-    ax.set_xlabel(f"b) {stage_2[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"b) {stage_2[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 2])
     single_topomap(ax, stage_3[1], min_color, max_color)
-    ax.set_xlabel(f"c) {stage_3[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"c) {stage_3[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 3])
     single_topomap(ax, stage_4[1], min_color, max_color)
-    ax.set_xlabel(f"d) {stage_4[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"d) {stage_4[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 0])
     single_topomap(ax, stage_5[1], min_color, max_color)
-    ax.set_xlabel(f"e) {stage_5[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"e) {stage_5[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 1])
     single_topomap(ax, stage_6[1], min_color, max_color)
-    ax.set_xlabel(f"f) {stage_6[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"f) {stage_6[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 2])
     single_topomap(ax, stage_7[1], min_color, max_color)
-    ax.set_xlabel(f"g) {stage_7[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"g) {stage_7[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[1, 3])
     single_topomap(ax, stage_8[1], min_color, max_color)
-    ax.set_xlabel(f"h) {stage_8[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"h) {stage_8[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 0])
     single_topomap(ax, stage_9[1], min_color, max_color)
-    ax.set_xlabel(f"i) {stage_9[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"i) {stage_9[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 1])
     single_topomap(ax, stage_10[1], min_color, max_color)
-    ax.set_xlabel(f"j) {stage_10[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"j) {stage_10[0]}", fontsize=8)
 
     #########################################################
     ax = fig.add_subplot(grid_specs[2, 2])
     single_topomap(ax, stage_11[1], min_color, max_color)
-    ax.set_xlabel(f"k) {stage_11[0]}", fontsize=8, **hfont)
+    ax.set_xlabel(f"k) {stage_11[0]}", fontsize=8)
 
     norm = matplotlib.colors.Normalize(min_color, max_color)
     ax = fig.add_subplot(grid_specs[2, 3])
@@ -812,7 +877,6 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
     grid_specs = GridSpec(2, 3, wspace=0.25, hspace=0.15)
     fig = plt.figure(figsize=(5.5, 5))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
-    hfont = {"fontname": "Times New Roman"}
     features_map = {"hjorth_mobility": "mobility",
                     "hjorth_complexity": "complexity",
                     "katz_fractal_dimension": "katz fd",
@@ -826,7 +890,7 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     starbars.draw_annotation(annotations[0], ax=ax)
     ax.set_ylabel(feature, fontsize=8)
-    ax.set_xlabel("(a) delta", fontsize=8, **hfont)
+    ax.set_xlabel("(a) delta", fontsize=8)
     ax.axes.get_xaxis().set_ticks([])
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
@@ -837,7 +901,7 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     starbars.draw_annotation(annotations[1], ax=ax)
     ax.set_ylabel("")
-    ax.set_xlabel("b) theta", fontsize=8, **hfont)
+    ax.set_xlabel("(b) theta", fontsize=8)
     ax.axes.get_xaxis().set_ticks([])
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
@@ -848,7 +912,7 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     starbars.draw_annotation(annotations[2], ax=ax)
     ax.set_ylabel("")
-    ax.set_xlabel("c) alpha", fontsize=8, **hfont)
+    ax.set_xlabel("(c) alpha", fontsize=8)
     ax.axes.get_xaxis().set_ticks([])
     ax.yaxis.set_tick_params(labelsize=6)
     ax.xaxis.set_tick_params(labelsize=6)
@@ -859,7 +923,7 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     starbars.draw_annotation(annotations[3], ax=ax)
     ax.set_ylabel(feature, fontsize=8)
-    ax.set_xlabel("d) beta", fontsize=8, **hfont)
+    ax.set_xlabel("(d) beta", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -869,7 +933,7 @@ def plot_univariate_inter_dist_chart_psd(delta: pandas.DataFrame, theta: pandas.
                        inner_kws=dict(box_width=5, whis_width=2, color="0.1"))
     starbars.draw_annotation(annotations[4], ax=ax)
     ax.set_ylabel("")
-    ax.set_xlabel("e) gamma", fontsize=8, **hfont)
+    ax.set_xlabel("(e) gamma", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
 
@@ -896,7 +960,6 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     grid_specs = GridSpec(3, 2, wspace=0.15, hspace=0.20)
     fig = plt.figure(figsize=(5, 4))
     seaborn.set_style("darkgrid", {"grid.color": ".6", "grid.linestyle": ":"})
-    hfont = {"fontname": "Times New Roman"}
     features_map = {"hjorth_mobility": "mobility",
                     "hjorth_complexity": "complexity",
                     "katz_fractal_dimension": "katz fd",
@@ -910,7 +973,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     seaborn.barplot(delta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
-    ax.set_xlabel("(a) delta", fontsize=8, **hfont)
+    ax.set_xlabel("(a) delta", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_ylim([0, 0.7])
 
@@ -919,7 +982,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     seaborn.barplot(theta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel("")
-    ax.set_xlabel("(b) theta", fontsize=8, **hfont)
+    ax.set_xlabel("(b) theta", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_ylim([0, 0.7])
 
@@ -928,7 +991,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     seaborn.barplot(alpha, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
-    ax.set_xlabel("(c) alpha", fontsize=8, **hfont)
+    ax.set_xlabel("(c) alpha", fontsize=8)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_ylim([0, 0.7])
 
@@ -936,7 +999,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     ax = fig.add_subplot(grid_specs[1, 1])
     seaborn.barplot(beta, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.axes.get_xaxis().set_ticks([])
-    ax.set_xlabel("(d) beta", fontsize=8, **hfont)
+    ax.set_xlabel("(d) beta", fontsize=8)
     ax.set_ylabel("")
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_ylim([0, 0.7])
@@ -945,7 +1008,7 @@ def plot_univariate_intra_bar_chart_psd(delta: pandas.DataFrame, theta: pandas.D
     ax = fig.add_subplot(grid_specs[2, 0])
     obj_chart = seaborn.barplot(gamma, x="time_point", y="value", ax=ax, palette="pastel", order=order)
     ax.set_ylabel(f"Mean {feature}", fontsize=8)
-    ax.set_xlabel("(e) gamma", fontsize=8, **hfont)
+    ax.set_xlabel("(e) gamma", fontsize=8)
     ax.xaxis.set_tick_params(labelsize=6)
     ax.yaxis.set_tick_params(labelsize=6)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
@@ -1114,12 +1177,11 @@ def plot_heatmap_diagram_windows(chb_dataset: tuple, siena_dataset: tuple,
     fig = plt.figure(figsize=(8, 8))
     mask = np.triu(np.ones_like(chb_dataset[-1], dtype=bool))
     mask[np.diag_indices_from(mask)] = False
-    hfont = {"fontname": "Times New Roman"}
 
     #########################################################
     ax = fig.add_subplot(grid_specs[0, 0])
     seaborn.heatmap(chb_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False, vmin=0, vmax=15)
-    ax.set_xlabel("(a) CHB-MIT", fontsize=8, **hfont)
+    ax.set_xlabel("(a) CHB-MIT", fontsize=8)
     ax.set_ylabel("")
     ax.yaxis.set_tick_params(labelsize=8)
     ax.xaxis.set_tick_params(labelsize=8)
@@ -1127,14 +1189,14 @@ def plot_heatmap_diagram_windows(chb_dataset: tuple, siena_dataset: tuple,
 
     ax = fig.add_subplot(grid_specs[0, 1])
     seaborn.heatmap(siena_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False, vmin=0, vmax=15)
-    ax.set_xlabel("(b) Siena", fontsize=8, **hfont)
+    ax.set_xlabel("(b) Siena", fontsize=8)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)
 
     ax = fig.add_subplot(grid_specs[1, 0])
     seaborn.heatmap(tusz_dataset[-1], annot=True, mask=mask, cmap=plt.cm.jet, fmt=".0f", cbar=False, vmin=0, vmax=15)
-    ax.set_xlabel("(c) TUSZ", fontsize=8, **hfont)
+    ax.set_xlabel("(c) TUSZ", fontsize=8)
     ax.set_ylabel("")
     ax.xaxis.set_tick_params(labelsize=8)
     ax.yaxis.set_tick_params(labelsize=8)

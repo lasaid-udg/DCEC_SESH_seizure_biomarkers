@@ -72,8 +72,8 @@ def main():
 
     logging.info(f"Processing feature = {FEATURE}")
     analyzer = IntraUnivariateTuszAnalyzer(FEATURE)
-    #analyzer.univariate_zone_bar_chart()
-    #analyzer.univariate_zone_dist_chart()
+    analyzer.univariate_zone_bar_chart()
+    analyzer.univariate_zone_dist_chart()
     for band in ["delta", "theta", "alpha", "beta", "gamma", "all"]:
         analyzer.univariate_topo_plot_average(band)
         time.sleep(3)
